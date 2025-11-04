@@ -3,7 +3,8 @@ services:
     name: SkillSyncAI
     runtime: python
     buildCommand: |
-      export POETRY_VERSION=0 && pip install --upgrade pip && pip install -r requirements.txt
+      echo "Using Python version from .python-version"
+      pip install --upgrade pip && pip install -r requirements.txt
     startCommand: gunicorn wsgi:application
     envVars:
       - key: MONGO_URI
