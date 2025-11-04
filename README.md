@@ -140,4 +140,4 @@ Templates: Ensure templates/ folder contains all required HTML files, and add st
 Contributing
 Contributions are welcome! Please submit a pull request or open an issue to suggest improvements or report bugs.
 License
-This project is licensed under the MIT License.
+This project is licensed under the MIT License.# SkillSyncAI
