@@ -1,8 +1,9 @@
 services:
   - type: web
     name: quiz-app
+    plan: free
     runtime: python
-    pythonVersion: "3.11"
+    branch: main
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn wsgi:application
     envVars:
@@ -10,3 +11,5 @@ services:
         value: mongodb+srv://pyaman003:vjkdRaysGU3rRoTj@quizapp.kcjc3is.mongodb.net/?retryWrites=true&w=majority&appName=quizapp
       - key: SECRET_KEY
         value: QWESE32143@112W768Y@
+    python:
+      version: "3.11"
