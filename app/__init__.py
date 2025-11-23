@@ -46,7 +46,7 @@ def create_app():
     with app.app_context():
         initialize_database()
     
-    # Register blueprints - fix import paths
+    # Register blueprints
     from app.routes.auth import auth_bp
     from app.routes.admin import admin_bp
     from app.routes.student import student_bp
@@ -55,6 +55,10 @@ def create_app():
     from app.routes.results import results_bp
     from app.routes.api import api_bp
     from app.routes.notifications import notifications_bp
+    from app.routes.ai_monitoring import ai_monitoring_bp
+    from app.routes.admin_settings import admin_settings_bp
+    from app.routes.resume import resume_bp
+    from app.routes.auto_questions import auto_questions_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
@@ -64,6 +68,10 @@ def create_app():
     app.register_blueprint(results_bp, url_prefix='/admin/results')
     app.register_blueprint(api_bp)
     app.register_blueprint(notifications_bp)
+    app.register_blueprint(ai_monitoring_bp)
+    app.register_blueprint(admin_settings_bp, url_prefix='/admin')
+    app.register_blueprint(resume_bp)
+    app.register_blueprint(auto_questions_bp)
     
     # Global after_request handler
     @app.after_request

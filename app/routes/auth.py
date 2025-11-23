@@ -78,6 +78,7 @@ def admin_login():
                 session['user_type'] = 'super_admin'
                 session['permissions'] = ROLES['admin']['permissions']
                 session['dashboard_access'] = ROLES['admin']['dashboard_access']
+                session['user_id'] = 'spuer_admin'
                 return redirect(url_for('admin.admin_dashboard'))
         
         # Check in admin_users collection for other roles

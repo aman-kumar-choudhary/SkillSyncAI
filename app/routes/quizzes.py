@@ -4,6 +4,7 @@ from app.utils.helpers import build_student_query, schoolDepartments, department
 from app.models.quiz_models import quizzes_collection, quiz_participants_collection, results_collection
 from app.models.question_models import question_bank_collection, questions_collection
 from app.models.user_models import users_collection
+from app.services.ai_monitoring import ai_monitoring_service
 from bson import ObjectId
 import uuid
 from datetime import datetime
@@ -11,7 +12,7 @@ from datetime import datetime
 quizzes_bp = Blueprint('quizzes', __name__)
 
 @quizzes_bp.route('/')
-@login_required(role='admin')
+@login_required
 @permission_required('read')
 def admin_quizzes():
     """Quiz management page"""
@@ -19,7 +20,7 @@ def admin_quizzes():
     return render_template('admin_quizzes.html', quizzes=quizzes)
 
 @quizzes_bp.route('/list')
-@login_required(role='admin')
+@login_required
 @permission_required('read')
 def list_quizzes():
     """List quizzes API"""
@@ -34,6 +35,7 @@ def list_quizzes():
             quiz.setdefault('description', '')
             quiz.setdefault('duration', 0)
             quiz.setdefault('pass_percentage', 40)
+            quiz.setdefault('ai_monitoring', False)
             
             # Ensure participants is always a list
             if not isinstance(quiz.get('participants'), list):
@@ -45,7 +47,7 @@ def list_quizzes():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @quizzes_bp.route('/create', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('create')
 def admin_create_quiz():
     """Create quiz"""
@@ -66,13 +68,14 @@ def admin_create_quiz():
         quiz = {
             "quiz_id": quiz_id,
             "title": data['quiz_title'],
-            "description": data.get('description', ''),  # Add description field
+            "description": data.get('description', ''),
             "school": data['school'],
             "department": data['department'],
             "course": data['course'],
             "semester": data['semester'],
             "duration": int(data['duration']),
             "pass_percentage": int(data['pass_percentage']),
+            "ai_monitoring": data.get('ai_monitoring', False),
             "status": "draft",
             "created_at": datetime.now(),
             "questions": [],
@@ -93,7 +96,7 @@ def admin_create_quiz():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @quizzes_bp.route('/manage/<quiz_id>')
-@login_required(role='admin')
+@login_required
 @permission_required('update')
 def manage_quiz(quiz_id):
     """Manage specific quiz"""
@@ -142,7 +145,7 @@ def manage_quiz(quiz_id):
         return redirect(url_for('quizzes.admin_quizzes'))
 
 @quizzes_bp.route('/preview/<quiz_id>')
-@login_required(role='admin')
+@login_required
 @permission_required('read')
 def preview_quiz(quiz_id):
     """Preview quiz page"""
@@ -167,7 +170,7 @@ def preview_quiz(quiz_id):
         return redirect(url_for('quizzes.admin_quizzes'))
 
 @quizzes_bp.route('/api/<quiz_id>/questions', methods=['POST', 'PUT', 'DELETE'])
-@login_required(role='admin')
+@login_required
 def manage_quiz_questions(quiz_id):
     """Add, update, or remove questions from quiz"""
     try:
@@ -217,9 +220,8 @@ def manage_quiz_questions(quiz_id):
         print(f"Error in manage_quiz_questions: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
-
 @quizzes_bp.route('/api/<quiz_id>/participants', methods=['POST', 'PUT', 'DELETE'])
-@login_required(role='admin')
+@login_required
 def manage_quiz_participants(quiz_id):
     """Add or remove participants from quiz"""
     try:
@@ -314,7 +316,7 @@ def manage_quiz_participants(quiz_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 @quizzes_bp.route('/api/<quiz_id>/participants/all', methods=['POST', 'DELETE'])
-@login_required(role='admin')
+@login_required
 def handle_all_participants(quiz_id):
     """Handle all participants enrollment"""
     try:
@@ -362,7 +364,7 @@ def handle_all_participants(quiz_id):
         return jsonify({"success": False, "error": str(e)}), 500
 
 @quizzes_bp.route('/api/<quiz_id>/status', methods=['POST'])
-@login_required(role='admin')
+@login_required
 def update_quiz_status(quiz_id):
     """Update quiz status (start/stop)"""
     try:
@@ -479,6 +481,78 @@ def update_quiz_status(quiz_id):
         print(f"Error in update_quiz_status: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
+@quizzes_bp.route('/api/<quiz_id>/start_with_monitoring', methods=['POST'])
+@login_required
+@permission_required('update')
+def start_quiz_with_monitoring(quiz_id):
+    """Start quiz with AI monitoring"""
+    try:
+        quiz = quizzes_collection.find_one({"quiz_id": quiz_id})
+        if not quiz:
+            return jsonify({"success": False, "error": "Quiz not found"}), 404
+        
+        # Activate the quiz with AI monitoring
+        result = quizzes_collection.update_one(
+            {"quiz_id": quiz_id},
+            {"$set": {
+                "status": "active", 
+                "started_at": datetime.now(),
+                "ai_monitoring": True
+            }}
+        )
+        
+        if result.modified_count > 0:
+            # Activate questions
+            target_course = quiz['course']
+            target_semester = quiz['semester']
+            
+            # Handle "All" options
+            if target_course == "all" or target_semester == "all":
+                if target_course == "all" and target_semester == "all":
+                    questions_collection.update_many(
+                        {},
+                        {"$set": {"active": True, "activated_at": datetime.now()}}
+                    )
+                elif target_course == "all":
+                    questions_collection.update_many(
+                        {"semester": target_semester},
+                        {"$set": {"active": True, "activated_at": datetime.now()}}
+                    )
+                elif target_semester == "all":
+                    questions_collection.update_many(
+                        {"course": target_course},
+                        {"$set": {"active": True, "activated_at": datetime.now()}}
+                    )
+            else:
+                questions_collection.update_many(
+                    {
+                        "course": target_course,
+                        "semester": target_semester
+                    },
+                    {"$set": {"active": True, "activated_at": datetime.now()}}
+                )
+            
+            # Notify students about AI monitoring
+            notify_quiz_start_with_monitoring(quiz)
+            
+            log_activity(
+                "quiz_started_with_ai",
+                f"Started quiz with AI monitoring: {quiz['title']}",
+                scholar_id=None
+            )
+            
+            return jsonify({
+                "success": True, 
+                "message": "Quiz started with AI monitoring",
+                "ai_monitoring": True
+            })
+        else:
+            return jsonify({"success": False, "error": "Failed to start quiz"}), 400
+            
+    except Exception as e:
+        print(f"Error in start_quiz_with_monitoring: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
 def notify_quiz_start(quiz):
     """Notify students when quiz starts"""
     try:
@@ -514,8 +588,43 @@ def notify_quiz_start(quiz):
     except Exception as e:
         print(f"Error notifying students: {str(e)}")
 
+def notify_quiz_start_with_monitoring(quiz):
+    """Notify students when quiz starts with AI monitoring"""
+    try:
+        target_course = quiz['course']
+        target_semester = quiz['semester']
+        
+        # Build query based on quiz scope
+        if quiz.get('participants') and 'all' in quiz.get('participants', []):
+            if target_course == "all" and target_semester == "all":
+                students = users_collection.find({})
+            elif target_course == "all":
+                students = users_collection.find({"semester": target_semester})
+            elif target_semester == "all":
+                students = users_collection.find({"course": target_course})
+            else:
+                students = users_collection.find({
+                    "course": target_course,
+                    "semester": target_semester
+                })
+        else:
+            students = users_collection.find({
+                "scholar_id": {"$in": quiz.get('participants', [])}
+            })
+        
+        for student in students:
+            create_notification(
+                student['scholar_id'],
+                "Quiz Started with AI Monitoring",
+                f"A new quiz '{quiz['title']}' has started with AI-powered monitoring. Please ensure you have camera access.",
+                "warning"
+            )
+    
+    except Exception as e:
+        print(f"Error notifying students: {str(e)}")
+
 @quizzes_bp.route('/api/<quiz_id>', methods=['DELETE'])
-@login_required(role='admin')
+@login_required
 @permission_required('delete')
 def delete_quiz(quiz_id):
     """Delete quiz"""

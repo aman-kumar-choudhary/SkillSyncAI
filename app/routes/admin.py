@@ -11,7 +11,7 @@ from datetime import datetime
 admin_bp = Blueprint('admin', __name__)
 
 @admin_bp.route('/')
-@login_required(role='admin')
+@login_required 
 def admin_dashboard():
     """Admin dashboard - Accessible to all admin roles"""
     # Get accurate stats
@@ -93,7 +93,7 @@ def admin_dashboard():
     return render_template('admin.html', stats=stats)
 
 @admin_bp.route('/users')
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def admin_users():
     """User management page - Only for super admin"""
@@ -151,7 +151,7 @@ def admin_users():
                            per_page=per_page)
 
 @admin_bp.route('/edit_user', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def edit_user():
     """Edit user details"""
@@ -192,7 +192,7 @@ def edit_user():
     return jsonify({"error": "No changes made or user not found"}), 404
 
 @admin_bp.route('/delete_user', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def delete_user():
     """Delete user"""
@@ -220,7 +220,7 @@ def delete_user():
     return jsonify({"success": True, "message": "User and related data deleted successfully"})
 
 @admin_bp.route('/block_user', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def block_user():
     """Block or unblock user"""
@@ -249,7 +249,7 @@ def block_user():
     return jsonify({"success": True, "message": f"User {'blocked' if block else 'unblocked'} successfully"})
 
 @admin_bp.route('/user_results/<scholar_id>')
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def user_results(scholar_id):
     """Get user results"""
@@ -270,7 +270,7 @@ def user_results(scholar_id):
 
 
 @admin_bp.route('/users/manage-admins')
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def manage_admin_users():
     """Manage admin users page"""
@@ -280,7 +280,7 @@ def manage_admin_users():
                          roles=ROLES.keys())
 
 @admin_bp.route('/users/manage-admins-data')
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def manage_admin_users_data():
     """Serve admin users data for the management page"""
@@ -305,7 +305,7 @@ def manage_admin_users_data():
         return jsonify({"error": str(e)}), 500
 
 @admin_bp.route('/admin-users/create', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def create_admin_user():
     """Create a new admin user"""
@@ -358,7 +358,7 @@ def create_admin_user():
         return jsonify({"error": str(e)}), 500
 
 @admin_bp.route('/admin-users/update', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def update_admin_user():
     """Update admin user"""
@@ -395,7 +395,7 @@ def update_admin_user():
         return jsonify({"error": str(e)}), 500
 
 @admin_bp.route('/admin-users/delete', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @role_required(3)
 def delete_admin_user():
     """Delete admin user"""
@@ -416,7 +416,7 @@ def delete_admin_user():
         return jsonify({"error": str(e)}), 500
 
 @admin_bp.route('/students/filter', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('read')
 def filter_students():
     """Filter students - Requires read permission"""
@@ -435,14 +435,14 @@ def filter_students():
         return jsonify({"error": str(e)}), 500
 
 @admin_bp.route('/recent_activities')
-@login_required(role='admin')
+@login_required
 def recent_activities():
     """Get recent activities"""
     activities = list(activities_collection.find({}, {'_id': 0}).sort('timestamp', -1).limit(20))
     return jsonify({"activities": activities})
 
 @admin_bp.route('/quiz_stats')
-@login_required(role='admin')
+@login_required
 def quiz_stats():
     """Get quiz statistics"""
     from app.models.question_models import questions_collection
@@ -476,7 +476,7 @@ def quiz_stats():
     })
 
 @admin_bp.route('/leaderboard')
-@login_required(role='admin')
+@login_required
 def admin_leaderboard():
     """Admin leaderboard page"""
     school = request.args.get('school', '')
@@ -569,7 +569,7 @@ def admin_leaderboard():
 
 
 @admin_bp.route('/leaderboard_data')
-@login_required(role='admin')
+@login_required
 def leaderboard_data():
     """API endpoint for leaderboard data"""
     try:
@@ -652,7 +652,7 @@ def leaderboard_data():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @admin_bp.route('/dashboard_stats')
-@login_required(role='admin')
+@login_required
 def dashboard_stats():
     """API endpoint for dashboard statistics"""
     try:
@@ -700,7 +700,7 @@ def dashboard_stats():
         return jsonify({"success": False, "error": str(e)}), 500
 
 @admin_bp.route('/clear_filters')
-@login_required(role='admin')
+@login_required
 def clear_filters():
     """Clear all filters and return to default view"""
     # This is handled client-side, but we can add server-side logic if needed

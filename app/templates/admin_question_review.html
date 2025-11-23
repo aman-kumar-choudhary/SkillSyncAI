@@ -17,9 +17,15 @@
     }
     .action-btn {
         transition: all 0.2s ease;
+        cursor: pointer;
+        border: none;
+        background: none;
+        padding: 4px 8px;
+        border-radius: 4px;
     }
     .action-btn:hover {
         transform: scale(1.05);
+        background-color: #f3f4f6;
     }
     .bulk-actions {
         background: #f8fafc;
@@ -29,7 +35,56 @@
         margin-bottom: 1rem;
     }
     
-    /* Pagination styles matching admin_users.html */
+    /* AI Feedback Styles */
+    .ai-feedback {
+        border-left: 4px solid #3b82f6;
+        background: #f8fafc;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+        padding: 1rem;
+    }
+
+    .ai-suggestion {
+        padding: 0.75rem;
+        margin: 0.5rem 0;
+        background: white;
+        border-radius: 0.375rem;
+        border: 1px solid #e5e7eb;
+    }
+
+    .quality-excellent { border-left-color: #10b981; background-color: #f0fdf4; }
+    .quality-good { border-left-color: #3b82f6; background-color: #eff6ff; }
+    .quality-fair { border-left-color: #f59e0b; background-color: #fffbeb; }
+    .quality-poor { border-left-color: #ef4444; background-color: #fef2f2; }
+    .quality-unknown { border-left-color: #6b7280; background-color: #f9fafb; }
+
+    .confidence-high { color: #10b981; font-weight: 600; }
+    .confidence-medium { color: #f59e0b; font-weight: 600; }
+    .confidence-low { color: #ef4444; font-weight: 600; }
+
+    .ai-processing {
+        background: #fffbeb;
+        border: 1px solid #fef3c7;
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .ai-status-badge {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    .ai-feedback-toggle {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .ai-feedback-toggle:hover {
+        background-color: #f3f4f6;
+    }
+
+    /* Pagination styles */
     .pagination-btn {
         transition: all 0.2s ease;
     }
@@ -107,7 +162,7 @@
                 </div>
                 <div>
                     <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">Question Review</h1>
-                    <p class="text-gray-600 text-sm mt-1">Review and approve pending questions</p>
+                    <p class="text-gray-600 text-sm mt-1">Review and approve pending questions with AI assistance</p>
                 </div>
             </div>
             <div class="flex items-center space-x-4">
@@ -121,6 +176,51 @@
                     <span>/</span>
                     <span class="text-blue-600">Review</span>
                 </nav>
+            </div>
+        </div>
+
+        <!-- AI System Status -->
+        <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6 border border-gray-100">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div class="flex items-center mb-4 md:mb-0">
+                    <div class="bg-purple-100 p-3 rounded-lg mr-4">
+                        <i class="fas fa-robot text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800">AI Review Assistant</h3>
+                        <p class="text-gray-600 text-sm">
+                            {% if ai_enabled %}
+                                <span class="text-green-600">●</span> AI system is active
+                            {% else %}
+                                <span class="text-red-600">●</span> AI system is disabled - <a href="#" class="text-blue-600 hover:underline">Configure API key</a>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    {% if ai_enabled %}
+                    <button onclick="analyzeAllQuestions()" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center {% if is_processing %}opacity-50 cursor-not-allowed{% endif %}"
+                            {% if is_processing %}disabled{% endif %}>
+                        <i class="fas fa-robot mr-2"></i>
+                        {% if is_processing %}
+                            <span class="flex items-center">
+                                <i class="fas fa-spinner fa-spin mr-2"></i>Processing...
+                            </span>
+                        {% else %}
+                            AI Review All ({{ pending_ai_review }} pending)
+                        {% endif %}
+                    </button>
+                    <button onclick="checkAIStatus()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i>Refresh Status
+                    </button>
+                    {% else %}
+                    <button class="bg-gray-400 text-white px-4 py-2 rounded-lg text-sm cursor-not-allowed flex items-center">
+                        <i class="fas fa-robot mr-2"></i>AI System Disabled
+                    </button>
+                    {% endif %}
+                </div>
             </div>
         </div>
 
@@ -157,27 +257,29 @@
             
             <div class="table-container">
                 {% if questions %}
-                <table class="min-w-full divide-y divide-gray-200 mobile-table">
+                <table class="min-w-full divide-y divide-gray-200 mobile-table" id="questions-table">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
-                                <input type="checkbox" id="select-all-checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <input type="checkbox" id="select-all-table" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                             </th>
                             <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S no.</th>
                             <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question</th>
                             <th class="hidden md:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Options</th>
                             <th class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correct Answer</th>
-                            <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Status</th>
                             <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-white divide-y divide-gray-200" id="questions-tbody">
                         {% for question in questions %}
                         {% set serial_no = (current_page - 1) * page_size + loop.index %}
                         {% set options_text = question.options|join(', ') %}
                         {% set options_display = options_text[:50] %}
                         {% set correct_answer_display = question.correct_answer[:30] %}
-                        <tr class="hover:bg-gray-50">
+                        
+                        <!-- Question Row -->
+                        <tr class="hover:bg-gray-50 question-row" data-question-id="{{ question.question_id }}">
                             <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap">
                                 <input type="checkbox" class="question-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-question-id="{{ question.question_id }}">
                             </td>
@@ -200,31 +302,165 @@
                                 </span>
                             </td>
                             <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
-                                <span class="status-badge bg-yellow-100 text-yellow-800 text-xs">Pending</span>
+                                {% if question.ai_feedback %}
+                                    {% if question.ai_feedback.status == 'analyzed' %}
+                                        <span class="ai-status-badge bg-green-100 text-green-800 flex items-center">
+                                            <i class="fas fa-robot mr-1 text-xs"></i>
+                                            Reviewed
+                                        </span>
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            {{ (question.ai_feedback.confidence_score * 100)|round }}% confidence
+                                        </div>
+                                    {% elif question.ai_feedback.status == 'processing' %}
+                                        <span class="ai-status-badge bg-yellow-100 text-yellow-800 flex items-center">
+                                            <i class="fas fa-sync-alt mr-1 text-xs animate-spin"></i>
+                                            Processing
+                                        </span>
+                                    {% else %}
+                                        <span class="ai-status-badge bg-red-100 text-red-800 flex items-center">
+                                            <i class="fas fa-exclamation-triangle mr-1 text-xs"></i>
+                                            Error
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="ai-status-badge bg-gray-100 text-gray-800 flex items-center">
+                                        <i class="fas fa-clock mr-1 text-xs"></i>
+                                        Pending
+                                    </span>
+                                {% endif %}
                             </td>
                             <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
-                                <div class="action-buttons">
-                                    <button data-action="edit" 
+                                <div class="action-buttons flex space-x-2">
+                                    {% if not question.ai_feedback or question.ai_feedback.status != 'processing' %}
+                                    <button type="button" 
+                                            class="action-btn text-purple-600 hover:text-purple-800" 
+                                            title="Analyze with AI"
+                                            onclick="analyzeQuestion('{{ question.question_id }}')">
+                                        <i class="fas fa-robot text-sm md:text-base"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button type="button" 
+                                            class="action-btn text-blue-600 hover:text-blue-800 edit-question-btn" 
+                                            title="Edit Question"
                                             data-question-id="{{ question.question_id }}"
-                                            data-text="{{ question.text }}"
-                                            data-options="{{ question.options|join('|||') }}"
-                                            data-correct-answer="{{ question.correct_answer }}"
-                                            class="action-btn text-blue-600 hover:text-blue-800 p-1 md:p-0" 
-                                            title="Edit Question">
+                                            data-question-text="{{ question.text }}"
+                                            data-question-options="{{ question.options|tojson|forceescape }}"
+                                            data-correct-answer="{{ question.correct_answer }}">
                                         <i class="fas fa-edit text-sm md:text-base"></i>
                                     </button>
-                                    <button data-action="approve" 
-                                            data-question-id="{{ question.question_id }}"
-                                            class="action-btn text-green-600 hover:text-green-800 p-1 md:p-0" 
-                                            title="Approve">
+                                    <button type="button" 
+                                            class="action-btn text-green-600 hover:text-green-800" 
+                                            title="Approve"
+                                            onclick="approveQuestion('{{ question.question_id }}')">
                                         <i class="fas fa-check text-sm md:text-base"></i>
                                     </button>
-                                    <button data-action="reject" 
-                                            data-question-id="{{ question.question_id }}"
-                                            class="action-btn text-red-600 hover:text-red-800 p-1 md:p-0" 
-                                            title="Reject">
+                                    <button type="button" 
+                                            class="action-btn text-red-600 hover:text-red-800" 
+                                            title="Reject"
+                                            onclick="rejectQuestion('{{ question.question_id }}')">
                                         <i class="fas fa-times text-sm md:text-base"></i>
                                     </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- AI Feedback Row -->
+                        <tr id="ai-feedback-{{ question.question_id }}" class="hidden bg-gray-50">
+                            <td colspan="7" class="px-3 py-4">
+                                <div class="ai-feedback">
+                                    <div class="flex justify-between items-center mb-3">
+                                        <h4 class="font-semibold text-gray-800 flex items-center">
+                                            <i class="fas fa-robot mr-2 text-blue-600"></i>
+                                            AI Review Suggestions
+                                        </h4>
+                                        {% if question.ai_feedback and question.ai_feedback.status == 'analyzed' %}
+                                        <div class="flex items-center space-x-4 text-sm">
+                                            <span class="quality-{{ question.ai_feedback.overall_quality }} px-2 py-1 rounded text-sm font-medium">
+                                                Quality: {{ question.ai_feedback.overall_quality|title }}
+                                            </span>
+                                            <span class="confidence-{{ 'high' if question.ai_feedback.confidence_score > 0.7 else 'medium' if question.ai_feedback.confidence_score > 0.4 else 'low' }} text-sm">
+                                                Confidence: {{ (question.ai_feedback.confidence_score * 100)|round }}%
+                                            </span>
+                                            <button type="button" 
+                                                    class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                                    onclick="applyAISuggestions('{{ question.question_id }}')">
+                                                <i class="fas fa-magic mr-1"></i>Apply Suggestions
+                                            </button>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if question.ai_feedback and question.ai_feedback.status == 'analyzed' %}
+                                        {% if question.ai_feedback.suggestions %}
+                                        <div class="mb-4">
+                                            <h5 class="font-medium text-gray-700 mb-2">Suggestions:</h5>
+                                            {% for suggestion in question.ai_feedback.suggestions %}
+                                            <div class="ai-suggestion">
+                                                <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                                                {{ suggestion }}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if question.ai_feedback.specific_issues %}
+                                        <div class="mb-4">
+                                            <h5 class="font-medium text-gray-700 mb-2">Issues Found:</h5>
+                                            {% for issue in question.ai_feedback.specific_issues %}
+                                            <div class="ai-suggestion bg-red-50 border-red-200">
+                                                <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                                                {{ issue }}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if question.ai_feedback.recommended_changes %}
+                                        <div class="mb-4">
+                                            <h5 class="font-medium text-gray-700 mb-2">Recommended Changes:</h5>
+                                            {% for change in question.ai_feedback.recommended_changes %}
+                                            <div class="ai-suggestion bg-blue-50 border-blue-200">
+                                                <i class="fas fa-wrench text-blue-500 mr-2"></i>
+                                                {{ change }}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        {% endif %}
+
+                                        {% if question.ai_feedback.improved_question and question.ai_feedback.improved_question != question.text %}
+                                        <div class="mb-4">
+                                            <h5 class="font-medium text-gray-700 mb-2">Improved Question:</h5>
+                                            <div class="ai-suggestion bg-green-50 border-green-200">
+                                                <i class="fas fa-star text-green-500 mr-2"></i>
+                                                {{ question.ai_feedback.improved_question }}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        
+                                        {% if not question.ai_feedback.suggestions and not question.ai_feedback.specific_issues %}
+                                        <p class="text-green-600 bg-green-50 p-3 rounded-lg">
+                                            <i class="fas fa-check-circle mr-2"></i>
+                                            No major issues found. Question appears to be well-structured.
+                                        </p>
+                                        {% endif %}
+                                        
+                                    {% elif question.ai_feedback and question.ai_feedback.status == 'processing' %}
+                                        <div class="ai-processing text-center">
+                                            <i class="fas fa-sync-alt animate-spin text-2xl text-yellow-500 mb-2"></i>
+                                            <p class="text-yellow-700 font-medium">AI is analyzing this question...</p>
+                                            <p class="text-yellow-600 text-sm">This may take a few seconds.</p>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-robot text-3xl text-gray-400 mb-3"></i>
+                                            <p class="text-gray-500 mb-3">This question hasn't been analyzed by AI yet.</p>
+                                            <button type="button" 
+                                                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                                    onclick="analyzeQuestion('{{ question.question_id }}')">
+                                                <i class="fas fa-robot mr-2"></i>Analyze with AI
+                                            </button>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -313,14 +549,14 @@
                             class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == total_pages %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
                             {% if current_page == total_pages %}disabled{% endif %}
                             title="Last Page">
-                                <i class="fas fa-angle-double-right"></i>
-                            </button>
-                        </div>
-                    </div>
+                        <i class="fas fa-angle-double-right"></i>
+                    </button>
                 </div>
-                {% endif %}
             </div>
         </div>
+        {% endif %}
+    </div>
+</div>
 
 <!-- Edit Question Modal -->
 <div id="edit-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50 hidden">
@@ -395,10 +631,29 @@
 
     // Initialize page
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('Initializing question review page...');
+        
         // Checkbox event listeners
         const selectAllCheckbox = document.getElementById('select-all-review');
+        const selectAllTable = document.getElementById('select-all-table');
+        
         if (selectAllCheckbox) {
             selectAllCheckbox.addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.question-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                    if (this.checked) {
+                        selectedQuestions.add(checkbox.dataset.questionId);
+                    } else {
+                        selectedQuestions.delete(checkbox.dataset.questionId);
+                    }
+                });
+                updateBulkActionButtons();
+            });
+        }
+
+        if (selectAllTable) {
+            selectAllTable.addEventListener('change', function() {
                 const checkboxes = document.querySelectorAll('.question-checkbox');
                 checkboxes.forEach(checkbox => {
                     checkbox.checked = this.checked;
@@ -425,30 +680,16 @@
             });
         });
 
-        // Action button event delegation
-        document.addEventListener('click', function(event) {
-            const button = event.target.closest('button[data-action]');
-            if (!button) return;
-
-            const action = button.getAttribute('data-action');
-            const questionId = button.getAttribute('data-question-id');
-
-            switch (action) {
-                case 'edit':
-                    const text = button.getAttribute('data-text');
-                    const options = button.getAttribute('data-options').split('|||');
-                    const correctAnswer = button.getAttribute('data-correct-answer');
-                    editQuestion(questionId, text, options, correctAnswer);
-                    break;
+        // Edit question button handlers
+        document.querySelectorAll('.edit-question-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const questionId = this.getAttribute('data-question-id');
+                const questionText = this.getAttribute('data-question-text');
+                const questionOptions = JSON.parse(this.getAttribute('data-question-options'));
+                const correctAnswer = this.getAttribute('data-correct-answer');
                 
-                case 'approve':
-                    approveQuestion(questionId);
-                    break;
-                
-                case 'reject':
-                    rejectQuestion(questionId);
-                    break;
-            }
+                editQuestion(questionId, questionText, questionOptions, correctAnswer);
+            });
         });
 
         // Per page select change
@@ -469,115 +710,38 @@
         if (bulkRejectBtn) {
             bulkRejectBtn.addEventListener('click', bulkReject);
         }
+
+        // Add click handlers for question rows to toggle AI feedback
+        document.querySelectorAll('.question-row').forEach(row => {
+            row.addEventListener('click', function(e) {
+                // Don't trigger if clicking on action buttons or checkboxes
+                if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+                    return;
+                }
+                const questionId = this.getAttribute('data-question-id');
+                toggleAIFeedback(questionId);
+            });
+        });
+
+        console.log('Question review page initialized successfully');
     });
 
-    // Pagination functions
-    function goToPage(page) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('page', page);
-        window.location.href = url.toString();
-    }
-
-    function changePerPage(perPage) {
-        const url = new URL(window.location.href);
-        url.searchParams.set('page_size', perPage);
-        url.searchParams.set('page', 1);
-        window.location.href = url.toString();
-    }
-
-    // Update select all checkbox
-    function updateSelectAllCheckbox() {
-        const checkboxes = document.querySelectorAll('.question-checkbox');
-        const selectAll = document.getElementById('select-all-review');
-        if (checkboxes.length > 0 && selectAll) {
-            const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-            const someChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
-            
-            selectAll.checked = allChecked;
-            selectAll.indeterminate = someChecked && !allChecked;
-        }
-    }
-
-    // Update bulk action buttons
-    function updateBulkActionButtons() {
-        const hasSelected = selectedQuestions.size > 0;
-        const bulkApproveBtn = document.getElementById('bulk-approve-btn');
-        const bulkRejectBtn = document.getElementById('bulk-reject-btn');
-        
-        if (bulkApproveBtn) bulkApproveBtn.disabled = !hasSelected;
-        if (bulkRejectBtn) bulkRejectBtn.disabled = !hasSelected;
-    }
-
-    function bulkApprove() {
-        const questionIds = Array.from(selectedQuestions);
-        if (questionIds.length === 0) return;
-
-        if (confirm(`Are you sure you want to approve ${questionIds.length} question(s)?`)) {
-            showLoading();
-            
-            fetch('/admin/questions/api/review/bulk-approve', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ question_ids: questionIds })
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    showToast('Success', data.message, 'success');
-                    selectedQuestions.clear();
-                    window.location.reload();
-                } else {
-                    showToast('Error', data.error || 'Failed to approve questions', 'error');
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                showToast('Error', 'Failed to approve questions: ' + error, 'error');
-            });
-        }
-    }
-
-    function bulkReject() {
-        const questionIds = Array.from(selectedQuestions);
-        if (questionIds.length === 0) return;
-
-        if (confirm(`Are you sure you want to reject ${questionIds.length} question(s)?`)) {
-            showLoading();
-
-            fetch('/admin/questions/api/review/bulk-reject', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ question_ids: questionIds })
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.success) {
-                    showToast('Success', data.message, 'success');
-                    selectedQuestions.clear();
-                    window.location.reload();
-                } else {
-                    showToast('Error', data.error || 'Failed to reject questions', 'error');
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                showToast('Error', 'Failed to reject questions: ' + error, 'error');
-            });
-        }
-    }
-
-    // Individual question actions
+    // Edit question function
     function editQuestion(questionId, text, options, correctAnswer) {
+        console.log('Editing question:', questionId);
+        
         document.getElementById('edit-question_id').value = questionId;
         document.getElementById('edit-text').value = text;
         
+        // Fill options
         for (let i = 0; i < 4; i++) {
-            document.getElementById(`edit-option-${i+1}`).value = options[i] || '';
+            const optionInput = document.getElementById(`edit-option-${i+1}`);
+            if (optionInput) {
+                optionInput.value = options[i] || '';
+            }
         }
         
-        // Set correct answer (find which option matches)
+        // Set correct answer
         let correctAnswerIndex = -1;
         for (let i = 0; i < options.length; i++) {
             if (options[i] === correctAnswer) {
@@ -585,7 +749,11 @@
                 break;
             }
         }
-        document.getElementById('edit-correct-answer').value = correctAnswerIndex;
+        
+        const correctAnswerSelect = document.getElementById('edit-correct-answer');
+        if (correctAnswerSelect) {
+            correctAnswerSelect.value = correctAnswerIndex > 0 ? correctAnswerIndex.toString() : '';
+        }
         
         // Show modal
         const modal = document.getElementById('edit-modal');
@@ -634,8 +802,136 @@
               }
           }).catch(error => {
               hideLoading();
-              showToast('Error', 'Error updating question: ' + error, 'error');
+              console.error('Error updating question:', error);
+              showToast('Error', 'Error updating question: ' + error.message, 'error');
           });
+    }
+
+    // AI Review Functions
+    function analyzeQuestion(questionId) {
+        console.log('Analyzing question:', questionId);
+        showLoading();
+        
+        fetch(`/admin/questions/api/review/analyze/${questionId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                showToast('Success', 'Question analyzed with AI', 'success');
+                // Reload the question row
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            } else {
+                showToast('Error', data.error || 'Failed to analyze question', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            console.error('Error analyzing question:', error);
+            showToast('Error', 'Error analyzing question: ' + error.message, 'error');
+        });
+    }
+
+    function analyzeAllQuestions() {
+        if (confirm('This will analyze all pending questions with AI. This may take several minutes. Continue?')) {
+            showLoading();
+            
+            fetch('/admin/questions/api/review/analyze-all', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast('Success', 'AI analysis started for all questions', 'success');
+                    // Start polling for status
+                    pollAIStatus();
+                } else {
+                    showToast('Error', data.error || 'Failed to start analysis', 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error starting analysis:', error);
+                showToast('Error', 'Error starting analysis: ' + error.message, 'error');
+            });
+        }
+    }
+
+    function applyAISuggestions(questionId) {
+        if (confirm('Apply AI suggestions to this question? This will update the question text and options.')) {
+            showLoading();
+            
+            fetch(`/admin/questions/api/review/apply-ai-suggestions/${questionId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast('Success', 'AI suggestions applied successfully', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    showToast('Error', data.error || 'Failed to apply suggestions', 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error applying suggestions:', error);
+                showToast('Error', 'Error applying suggestions: ' + error.message, 'error');
+            });
+        }
+    }
+
+    function checkAIStatus() {
+        fetch('/admin/questions/api/review/ai-status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_processing) {
+                    showToast('AI Status', `Processing: ${data.processed_count} done, ${data.pending_analysis} pending`, 'info');
+                } else {
+                    showToast('AI Status', `Ready: ${data.analyzed_count} analyzed, ${data.pending_analysis} pending`, 'success');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking AI status:', error);
+                showToast('Error', 'Failed to check AI status', 'error');
+            });
+    }
+
+    function pollAIStatus() {
+        // Poll every 5 seconds for status updates
+        const interval = setInterval(() => {
+            fetch('/admin/questions/api/review/ai-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.is_processing || data.pending_analysis === 0) {
+                        clearInterval(interval);
+                        showToast('Success', 'AI analysis completed!', 'success');
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error polling AI status:', error);
+                    clearInterval(interval);
+                });
+        }, 5000);
+    }
+
+    // Toggle AI feedback visibility
+    function toggleAIFeedback(questionId) {
+        const feedbackRow = document.getElementById(`ai-feedback-${questionId}`);
+        if (feedbackRow) {
+            feedbackRow.classList.toggle('hidden');
+        }
     }
 
     function approveQuestion(questionId) {
@@ -656,7 +952,8 @@
                   }
               }).catch(error => {
                   hideLoading();
-                  showToast('Error', 'Error approving question: ' + error, 'error');
+                  console.error('Error approving question:', error);
+                  showToast('Error', 'Error approving question: ' + error.message, 'error');
               });
         }
     }
@@ -679,8 +976,116 @@
                   }
               }).catch(error => {
                   hideLoading();
-                  showToast('Error', 'Error rejecting question: ' + error, 'error');
+                  console.error('Error rejecting question:', error);
+                  showToast('Error', 'Error rejecting question: ' + error.message, 'error');
               });
+        }
+    }
+
+    // Pagination functions
+    function goToPage(page) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('page', page);
+        window.location.href = url.toString();
+    }
+
+    function changePerPage(perPage) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('page_size', perPage);
+        url.searchParams.set('page', 1);
+        window.location.href = url.toString();
+    }
+
+    // Update select all checkbox
+    function updateSelectAllCheckbox() {
+        const checkboxes = document.querySelectorAll('.question-checkbox');
+        const selectAll = document.getElementById('select-all-review');
+        const selectAllTable = document.getElementById('select-all-table');
+        
+        if (checkboxes.length > 0) {
+            const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+            const someChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
+            
+            if (selectAll) {
+                selectAll.checked = allChecked;
+                selectAll.indeterminate = someChecked && !allChecked;
+            }
+            if (selectAllTable) {
+                selectAllTable.checked = allChecked;
+                selectAllTable.indeterminate = someChecked && !allChecked;
+            }
+        }
+    }
+
+    // Update bulk action buttons
+    function updateBulkActionButtons() {
+        const hasSelected = selectedQuestions.size > 0;
+        const bulkApproveBtn = document.getElementById('bulk-approve-btn');
+        const bulkRejectBtn = document.getElementById('bulk-reject-btn');
+        
+        if (bulkApproveBtn) bulkApproveBtn.disabled = !hasSelected;
+        if (bulkRejectBtn) bulkRejectBtn.disabled = !hasSelected;
+    }
+
+    function bulkApprove() {
+        const questionIds = Array.from(selectedQuestions);
+        if (questionIds.length === 0) return;
+
+        if (confirm(`Are you sure you want to approve ${questionIds.length} question(s)?`)) {
+            showLoading();
+            
+            fetch('/admin/questions/api/review/bulk-approve', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ question_ids: questionIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast('Success', data.message, 'success');
+                    selectedQuestions.clear();
+                    window.location.reload();
+                } else {
+                    showToast('Error', data.error || 'Failed to approve questions', 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error bulk approving:', error);
+                showToast('Error', 'Failed to approve questions: ' + error.message, 'error');
+            });
+        }
+    }
+
+    function bulkReject() {
+        const questionIds = Array.from(selectedQuestions);
+        if (questionIds.length === 0) return;
+
+        if (confirm(`Are you sure you want to reject ${questionIds.length} question(s)?`)) {
+            showLoading();
+
+            fetch('/admin/questions/api/review/bulk-reject', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ question_ids: questionIds })
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    showToast('Success', data.message, 'success');
+                    selectedQuestions.clear();
+                    window.location.reload();
+                } else {
+                    showToast('Error', data.error || 'Failed to reject questions', 'error');
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                console.error('Error bulk rejecting:', error);
+                showToast('Error', 'Failed to reject questions: ' + error.message, 'error');
+            });
         }
     }
 

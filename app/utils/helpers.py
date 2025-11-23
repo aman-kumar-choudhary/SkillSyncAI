@@ -188,6 +188,37 @@ def create_indexes():
     admin_users_collection.create_index("role")
     admin_users_collection.create_index("active")
 
+def initialize_ai_monitoring():
+    """Initialize AI monitoring collections and settings"""
+    try:
+        db = get_db()
+        
+        # AI Monitoring collections
+        if 'ai_violations' not in db.list_collection_names():
+            db.create_collection('ai_violations')
+            db.ai_violations.create_index([('user_id', 1), ('quiz_id', 1)])
+            db.ai_violations.create_index([('timestamp', -1)])
+            db.ai_violations.create_index([('type', 1)])
+        
+        # Add AI monitoring setting to quiz settings
+        quiz_settings_collection = db.quiz_settings
+        quiz_settings_collection.update_one(
+            {'setting_name': 'ai_monitoring_enabled'},
+            {'$setOnInsert': {
+                'setting_name': 'ai_monitoring_enabled',
+                'value': True,
+                'description': 'Enable AI-powered cheating detection',
+                'updated_at': datetime.now()
+            }},
+            upsert=True
+        )
+        
+        print("AI monitoring system initialized")
+        return True
+    except Exception as e:
+        print(f"❌ Error initializing AI monitoring: {str(e)}")
+        return False
+
 def initialize_notification_system():
     """Initialize notification collections"""
     try:
@@ -203,10 +234,10 @@ def initialize_notification_system():
         admin_notifications_collection.create_index([("timestamp", -1)])
         admin_notifications_collection.create_index([("read", 1)])
         
-        print("✅ Notification system initialized")
+        print("Notification system initialized")
         return True
     except Exception as e:
-        print(f"❌ Error initializing notification system: {str(e)}")
+        print(f"Error initializing notification system: {str(e)}")
         return False
 
 def cleanup_duplicate_emails():
@@ -253,7 +284,8 @@ def initialize_database():
     add_blocked_field()
     add_created_at_to_users()
     initialize_roles()
-    initialize_notification_system()  # Add this line
+    initialize_notification_system()
+    initialize_ai_monitoring()  # Add AI monitoring initialization
 
 
 

@@ -170,7 +170,7 @@ COURSE_MAPPING = {
 }
 
 @results_bp.route('/')
-@login_required(role='admin')
+@login_required
 @permission_required('read')
 def admin_results():
     """Results management page - Showing only published results"""
@@ -286,7 +286,7 @@ def admin_results():
                          per_page=per_page)
 
 @results_bp.route('/export_results', methods=['GET'])
-@login_required(role='admin')
+@login_required
 def export_results():
     """Export published results to CSV"""
     school = request.args.get('school', '')
@@ -345,7 +345,7 @@ def export_results():
     return send_file(output, mimetype='text/csv', as_attachment=True, download_name='published_quiz_results.csv')
 
 @results_bp.route('/publish_results', methods=['POST'])
-@login_required(role='admin')
+@login_required
 def publish_results():
     """Publish results for a workspace"""
     workspace_id = request.json.get('workspace_id')
@@ -389,7 +389,7 @@ def publish_results():
     return jsonify({"error": "Result not found"}), 404
 
 @results_bp.route('/api/bulk_publish_results', methods=['POST'])
-@login_required(role='admin')
+@login_required
 def bulk_publish_results():
     """Bulk publish results"""
     try:

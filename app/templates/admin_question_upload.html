@@ -1,5 +1,8 @@
-{% extends "admin_base.html" %} {% block title %}Upload Questions - DSVV Quiz
-System{% endblock %} {% block extra_head %}
+{% extends "admin_base.html" %}
+
+{% block title %}Upload Questions - DSVV Quiz System{% endblock %}
+
+{% block extra_head %}
 <style>
   .card-hover {
     transition: all 0.3s ease;
@@ -26,16 +29,93 @@ System{% endblock %} {% block extra_head %}
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
   }
 
-  /* Pagination styles matching admin_users.html */
+  /* Question Review Styles */
+  .question-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+  }
+  .question-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  .action-btn {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .action-btn:hover {
+    transform: scale(1.05);
+    background-color: #f3f4f6;
+  }
+  .bulk-actions {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* AI Feedback Styles */
+  .ai-feedback {
+    border-left: 4px solid #3b82f6;
+    background: #f8fafc;
+    border-radius: 0.5rem;
+    margin-top: 1rem;
+    padding: 1rem;
+  }
+
+  .ai-suggestion {
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    background: white;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+  }
+
+  .quality-excellent { border-left-color: #10b981; background-color: #f0fdf4; }
+  .quality-good { border-left-color: #3b82f6; background-color: #eff6ff; }
+  .quality-fair { border-left-color: #f59e0b; background-color: #fffbeb; }
+  .quality-poor { border-left-color: #ef4444; background-color: #fef2f2; }
+  .quality-unknown { border-left-color: #6b7280; background-color: #f9fafb; }
+
+  .confidence-high { color: #10b981; font-weight: 600; }
+  .confidence-medium { color: #f59e0b; font-weight: 600; }
+  .confidence-low { color: #ef4444; font-weight: 600; }
+
+  .ai-processing {
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  .ai-status-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+  }
+
+  .ai-feedback-toggle {
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .ai-feedback-toggle:hover {
+    background-color: #f3f4f6;
+  }
+
+  /* Pagination styles */
   .pagination-btn {
     transition: all 0.2s ease;
   }
-
+  
   .pagination-btn:hover:not(:disabled) {
     background-color: #f3f4f6;
     transform: translateY(-1px);
   }
-
+  
   .pagination-info {
     font-size: 0.875rem;
     color: #6b7280;
@@ -45,19 +125,11 @@ System{% endblock %} {% block extra_head %}
     overflow-x: auto;
     max-height: calc(100vh - 300px);
   }
-
+  
   .status-badge {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
     border-radius: 0.25rem;
-  }
-
-  .bulk-actions {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    margin-bottom: 1rem;
   }
 
   /* Mobile optimizations */
@@ -67,11 +139,11 @@ System{% endblock %} {% block extra_head %}
       flex-direction: column;
       gap: 0.5rem;
     }
-
+    
     .mobile-text-sm {
       font-size: 0.875rem;
     }
-
+    
     .mobile-padding {
       padding: 0.75rem;
     }
@@ -82,18 +154,18 @@ System{% endblock %} {% block extra_head %}
     .mobile-table {
       font-size: 0.75rem;
     }
-
+    
     .mobile-table th,
     .mobile-table td {
       padding: 0.5rem 0.25rem;
     }
-
+    
     .action-buttons {
       display: flex;
       flex-wrap: wrap;
       gap: 0.25rem;
     }
-
+    
     .action-btn {
       padding: 0.25rem;
     }
@@ -147,8 +219,29 @@ System{% endblock %} {% block extra_head %}
       transform: rotate(360deg);
     }
   }
+
+  /* Automated Question Generation Styles */
+  .keyword-checkbox:checked + span {
+    background-color: #e9d5ff;
+    border-color: #8b5cf6;
+  }
+
+  .student-card {
+    transition: all 0.2s ease;
+  }
+
+  .student-card:hover {
+    background-color: #f8fafc;
+  }
+
+  .filter-btn.active {
+    background-color: #3b82f6;
+    color: white;
+  }
 </style>
-{% endblock %} {% block content %}
+{% endblock %}
+
+{% block content %}
 <div class="p-4 md:p-6">
   <div class="max-w-9xl mx-auto">
     <!-- Header Section -->
@@ -339,7 +432,7 @@ System{% endblock %} {% block extra_head %}
                 for="correct-answer"
                 class="block text-sm font-medium text-gray-700 mb-2"
                 >Correct Answer</label
-              >
+                >
               <select
                 id="correct-answer"
                 name="correct_answer"
@@ -363,118 +456,583 @@ System{% endblock %} {% block extra_head %}
             </div>
           </form>
         </div>
+
+        <!-- Automated Question Generation Section -->
+        <div class="border-t pt-8 mt-8">
+          <h3 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-robot text-purple-600 mr-2"></i>
+            Automated Question Generation from Resumes
+          </h3>
+          
+          <!-- Resume Selection -->
+          <div class="bg-purple-50 rounded-lg p-4 mb-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between">
+              <div>
+                <h4 class="font-medium text-purple-800">Generate Questions from Student Resumes</h4>
+                <p class="text-sm text-purple-600 mt-1">
+                  Select students to generate questions based on their resume content
+                </p>
+              </div>
+              <button
+                onclick="loadStudentsWithResumes()"
+                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors mt-2 md:mt-0"
+              >
+                <i class="fas fa-sync-alt mr-2"></i>Refresh List
+              </button>
+            </div>
+          </div>
+
+          <!-- Students with Resumes List -->
+          <div id="students-resumes-section" class="mb-6">
+            <div class="flex justify-between items-center mb-3">
+              <label class="block text-sm font-medium text-gray-700">
+                Select Students (with uploaded resumes)
+              </label>
+              <div class="flex items-center space-x-2">
+                <input type="checkbox" id="select-all-students" class="h-4 w-4 text-blue-600">
+                <label for="select-all-students" class="text-sm text-gray-600">Select All</label>
+              </div>
+            </div>
+            
+            <div id="students-list" class="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-4 bg-gray-50">
+              <div class="text-center py-4">
+                <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+                <p class="mt-2 text-gray-500 text-sm">Loading students with resumes...</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Question Generation Settings -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Number of Questions
+              </label>
+              <select id="question-count" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                <option value="5">5 Questions</option>
+                <option value="10" selected>10 Questions</option>
+                <option value="15">15 Questions</option>
+                <option value="20">20 Questions</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Difficulty Level
+              </label>
+              <select id="question-difficulty" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                <option value="easy">Easy</option>
+                <option value="intermediate" selected>Intermediate</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Question Type
+              </label>
+              <select id="question-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                <option value="technical">Technical</option>
+                <option value="conceptual">Conceptual</option>
+                <option value="mixed" selected>Mixed</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Extract Keywords Button -->
+          <div class="text-center mb-4">
+            <button
+              onclick="extractKeywords()"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors"
+              id="extract-keywords-btn"
+            >
+              <i class="fas fa-search mr-2"></i>Extract Keywords from Selected Resumes
+            </button>
+          </div>
+
+          <!-- Generated Keywords Preview -->
+          <div id="keywords-preview" class="mt-6 hidden">
+            <h4 class="font-medium text-gray-800 mb-3">Extracted Keywords</h4>
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+              <div id="keywords-list" class="flex flex-wrap gap-2 mb-4">
+                <!-- Keywords will be displayed here -->
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Select keywords to include in question generation:</span>
+                <button
+                  onclick="selectAllKeywords()"
+                  class="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Select All
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Generate Questions Button -->
+          <div class="text-center mt-6">
+            <button
+              id="generate-questions-btn"
+              onclick="generateQuestionsFromResumes()"
+              class="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl disabled:bg-purple-400 disabled:cursor-not-allowed"
+              disabled
+            >
+              <i class="fas fa-robot mr-2"></i>Generate Questions Automatically
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
     <!-- Review Tab Content -->
     <div id="review-tab" class="tab-content">
-      <div
-        class="bg-white rounded-xl shadow-md p-4 md:p-6 border border-gray-100"
-      >
-        <div
-          class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6"
-        >
-          <h2
-            class="text-xl font-semibold text-gray-800 flex items-center mb-4 md:mb-0"
-          >
-            <i class="fas fa-tasks text-yellow-600 mr-3"></i> Review Questions
-          </h2>
-          <span
-            class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm"
-          >
-            <span id="pending-count">{{ pending_count }}</span> questions
-            pending review
+      <!-- Header Section for Review Tab -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 mobile-padding">
+        <div class="flex items-center mb-4 md:mb-0">
+          <div class="bg-yellow-100 p-3 rounded-xl mr-4">
+            <i class="fas fa-tasks text-yellow-600 text-2xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl lg:text-3xl font-bold text-gray-800">Question Review</h1>
+            <p class="text-gray-600 text-sm mt-1">Review and approve pending questions with AI assistance</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm" id="pending-count-badge">
+            {{ total_count }} questions pending review
           </span>
         </div>
-        <p class="text-gray-600 mb-6">
-          Review and approve or reject pending questions.
-        </p>
+      </div>
 
-        <!-- Bulk Actions Section -->
-        <div class="bulk-actions mb-6">
-          <div
-            class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-          >
-            <div class="flex items-center">
-              <input
-                type="checkbox"
-                id="select-all-checkbox-review"
-                class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3"
-              />
-              <label
-                for="select-all-checkbox-review"
-                class="text-sm font-medium text-gray-700"
-              >
-                Select all questions on this page
-              </label>
+      <!-- AI System Status -->
+      <div class="bg-white rounded-xl shadow-md p-4 md:p-6 mb-6 border border-gray-100">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+          <div class="flex items-center mb-4 md:mb-0">
+            <div class="bg-purple-100 p-3 rounded-lg mr-4">
+              <i class="fas fa-robot text-purple-600 text-xl"></i>
             </div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                id="bulk-approve-btn-review"
-                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                disabled
-              >
-                <i class="fas fa-check mr-2"></i>Approve Selected
-              </button>
-              <button
-                id="bulk-reject-btn-review"
-                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                disabled
-              >
-                <i class="fas fa-times mr-2"></i>Reject Selected
-              </button>
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800">AI Review Assistant</h3>
+              <p class="text-gray-600 text-sm">
+                {% if ai_enabled %}
+                  <span class="text-green-600">●</span> AI system is active and ready
+                {% else %}
+                  <span class="text-red-600">●</span> AI system is disabled - 
+                  <a href="/admin/settings" class="text-blue-600 hover:underline ml-1">
+                    Configure API key in settings
+                  </a>
+                {% endif %}
+              </p>
+              {% if not ai_enabled %}
+              <p class="text-xs text-red-500 mt-1">
+                Set GEMINI_API_KEY in your .env file to enable AI features
+              </p>
+              {% endif %}
             </div>
           </div>
-        </div>
-
-        <!-- Questions Table Section -->
-        <div class="bg-white p-4 md:p-6 rounded-xl shadow-md mb-6 md:mb-8">
-          <div
-            class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4"
-          >
-            <h2
-              class="text-lg md:text-xl font-semibold mb-2 md:mb-0 flex items-center text-green-700"
-            >
-              <i class="fas fa-list mr-2"></i> Pending Questions
-            </h2>
-            <div class="text-sm text-gray-600 mobile-text-sm">
-              Page <span id="review-current-page">{{ current_page }}</span> of
-              <span id="review-total-pages">{{ total_pages }}</span>
-            </div>
+          <div class="flex flex-wrap gap-2">
+            {% if ai_enabled %}
+            <button onclick="analyzeAllQuestions()" 
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center {% if is_processing %}opacity-50 cursor-not-allowed{% endif %}"
+                    {% if is_processing %}disabled{% endif %}>
+              <i class="fas fa-robot mr-2"></i>
+              {% if is_processing %}
+                <span class="flex items-center">
+                  <i class="fas fa-spinner fa-spin mr-2"></i>Processing...
+                </span>
+              {% else %}
+                AI Review All ({{ pending_ai_review }} pending)
+              {% endif %}
+            </button>
+            <button onclick="checkAIStatus()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center">
+              <i class="fas fa-sync-alt mr-2"></i>Refresh Status
+            </button>
+            {% else %}
+            <button class="bg-gray-400 text-white px-4 py-2 rounded-lg text-sm cursor-not-allowed flex items-center">
+              <i class="fas fa-robot mr-2"></i>AI System Disabled
+            </button>
+            {% endif %}
           </div>
-
-          <div class="table-container" id="review-table-container">
-            <!-- Review questions table will be loaded here dynamically -->
-          </div>
-        </div>
-
-        <!-- Pagination Section -->
-        <div
-          id="review-pagination"
-          class="bg-white p-3 md:p-4 rounded-xl shadow-md"
-        >
-          <!-- Pagination will be loaded here dynamically -->
         </div>
       </div>
+
+      <!-- Question Filters -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        <div class="flex flex-wrap gap-2">
+          <button class="filter-btn bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm transition-colors active" data-filter="all">
+            All Questions
+          </button>
+          <button class="filter-btn bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm transition-colors" data-filter="auto_generated">
+            Auto-generated
+          </button>
+          <button class="filter-btn bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm transition-colors" data-filter="manual">
+            Manual Upload
+          </button>
+        </div>
+        <div class="text-sm text-gray-600">
+          <span id="filtered-count">{{ total_count }}</span> questions
+        </div>
+      </div>
+
+      <!-- Bulk Actions Section -->
+      <div class="bulk-actions mb-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div class="flex items-center">
+            <input type="checkbox" id="select-all-review" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3">
+            <label for="select-all-review" class="text-sm font-medium text-gray-700">
+              Select all questions on this page
+            </label>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button id="bulk-approve-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+              <i class="fas fa-check mr-2"></i>Approve Selected
+            </button>
+            <button id="bulk-reject-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
+              <i class="fas fa-times mr-2"></i>Reject Selected
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Questions Table Section -->
+      <div class="bg-white p-4 md:p-6 rounded-xl shadow-md mb-6 md:mb-8">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+          <h2 class="text-lg md:text-xl font-semibold mb-2 md:mb-0 flex items-center text-green-700">
+            <i class="fas fa-list mr-2"></i> Pending Questions
+          </h2>
+          <div class="text-sm text-gray-600 mobile-text-sm">
+            Page {{ current_page }} of {{ total_pages }}
+          </div>
+        </div>
+        
+        <div class="table-container">
+          {% if questions %}
+          <table class="min-w-full divide-y divide-gray-200 mobile-table" id="questions-table">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
+                  <input type="checkbox" id="select-all-table" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                </th>
+                <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S no.</th>
+                <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question</th>
+                <th class="hidden md:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Options</th>
+                <th class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correct Answer</th>
+                <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">AI Status</th>
+                <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200" id="questions-tbody">
+              {% for question in questions %}
+              {% set serial_no = (current_page - 1) * page_size + loop.index %}
+              {% set options_text = question.options|join(', ') %}
+              {% set options_display = options_text[:50] if options_text|length > 50 else options_text %}
+              {% set correct_answer_display = question.correct_answer[:30] if question.correct_answer|length > 30 else question.correct_answer %}
+              {% set is_auto_generated = question.get('source') == 'auto_generated' %}
+              
+              <!-- Question Row -->
+              <tr class="hover:bg-gray-50 question-row" data-question-id="{{ question.question_id }}" data-source="{{ question.get('source', 'manual') }}">
+                <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap">
+                  <input type="checkbox" class="question-checkbox h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-question-id="{{ question.question_id }}">
+                </td>
+                <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm font-mono">
+                  {{ serial_no }}
+                </td>
+                <td class="px-3 py-2 md:px-6 md:py-4 text-sm mobile-text-sm">
+                  <span class="truncate max-w-[200px] md:max-w-[300px] block" title="{{ question.text }}">
+                    {{ question.text[:100] }}{% if question.text|length > 100 %}...{% endif %}
+                  </span>
+                  {% if is_auto_generated %}
+                  <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mt-1">
+                    <i class="fas fa-robot mr-1"></i>Auto-generated
+                  </span>
+                  {% endif %}
+                </td>
+                <td class="hidden md:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm">
+                  <span class="truncate max-w-[150px] block" title="{{ options_text }}">
+                    {{ options_display }}{% if options_text|length > 50 %}...{% endif %}
+                  </span>
+                </td>
+                <td class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm">
+                  <span class="truncate max-w-[120px] block" title="{{ question.correct_answer }}">
+                    {{ correct_answer_display }}{% if question.correct_answer|length > 30 %}...{% endif %}
+                  </span>
+                </td>
+                <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
+                  {% if is_auto_generated %}
+                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                      Auto
+                    </span>
+                  {% else %}
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                      Manual
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
+                  {% if question.ai_feedback %}
+                    {% if question.ai_feedback.status == 'analyzed' %}
+                      <span class="ai-status-badge bg-green-100 text-green-800 flex items-center">
+                        <i class="fas fa-robot mr-1 text-xs"></i>
+                        Reviewed
+                      </span>
+                      <div class="text-xs text-gray-500 mt-1">
+                        {{ (question.ai_feedback.confidence_score * 100)|round }}% confidence
+                      </div>
+                    {% elif question.ai_feedback.status == 'processing' %}
+                      <span class="ai-status-badge bg-yellow-100 text-yellow-800 flex items-center">
+                        <i class="fas fa-sync-alt mr-1 text-xs animate-spin"></i>
+                        Processing
+                      </span>
+                    {% else %}
+                      <span class="ai-status-badge bg-red-100 text-red-800 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-1 text-xs"></i>
+                        Error
+                      </span>
+                    {% endif %}
+                  {% else %}
+                    <span class="ai-status-badge bg-gray-100 text-gray-800 flex items-center">
+                      <i class="fas fa-clock mr-1 text-xs"></i>
+                      Pending
+                    </span>
+                  {% endif %}
+                </td>
+                <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
+                  <div class="action-buttons flex space-x-2">
+                    {% if not question.ai_feedback or question.ai_feedback.status != 'processing' %}
+                    <button type="button" 
+                            class="action-btn text-purple-600 hover:text-purple-800" 
+                            title="Analyze with AI"
+                            onclick="analyzeQuestion('{{ question.question_id }}')">
+                      <i class="fas fa-robot text-sm md:text-base"></i>
+                    </button>
+                    {% endif %}
+                    <button type="button" 
+                            class="action-btn text-blue-600 hover:text-blue-800 edit-question-btn" 
+                            title="Edit Question"
+                            data-question-id="{{ question.question_id }}"
+                            data-question-text="{{ question.text }}"
+                            data-question-options="{{ question.options|tojson|forceescape }}"
+                            data-correct-answer="{{ question.correct_answer }}">
+                      <i class="fas fa-edit text-sm md:text-base"></i>
+                    </button>
+                    <button type="button" 
+                            class="action-btn text-green-600 hover:text-green-800" 
+                            title="Approve"
+                            onclick="approveQuestion('{{ question.question_id }}')">
+                      <i class="fas fa-check text-sm md:text-base"></i>
+                    </button>
+                    <button type="button" 
+                            class="action-btn text-red-600 hover:text-red-800" 
+                            title="Reject"
+                            onclick="rejectQuestion('{{ question.question_id }}')">
+                      <i class="fas fa-times text-sm md:text-base"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- AI Feedback Row -->
+              <tr id="ai-feedback-{{ question.question_id }}" class="hidden bg-gray-50">
+                <td colspan="8" class="px-3 py-4">
+                  <div class="ai-feedback">
+                    <div class="flex justify-between items-center mb-3">
+                      <h4 class="font-semibold text-gray-800 flex items-center">
+                        <i class="fas fa-robot mr-2 text-blue-600"></i>
+                        AI Review Suggestions
+                      </h4>
+                      {% if question.ai_feedback and question.ai_feedback.status == 'analyzed' %}
+                      <div class="flex items-center space-x-4 text-sm">
+                        <span class="quality-{{ question.ai_feedback.overall_quality }} px-2 py-1 rounded text-sm font-medium">
+                          Quality: {{ question.ai_feedback.overall_quality|title }}
+                        </span>
+                        <span class="confidence-{{ 'high' if question.ai_feedback.confidence_score > 0.7 else 'medium' if question.ai_feedback.confidence_score > 0.4 else 'low' }} text-sm">
+                          Confidence: {{ (question.ai_feedback.confidence_score * 100)|round }}%
+                        </span>
+                        <button type="button" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors"
+                                onclick="applyAISuggestions('{{ question.question_id }}')">
+                          <i class="fas fa-magic mr-1"></i>Apply Suggestions
+                        </button>
+                      </div>
+                      {% endif %}
+                    </div>
+                    
+                    {% if question.ai_feedback and question.ai_feedback.status == 'analyzed' %}
+                      {% if question.ai_feedback.suggestions %}
+                      <div class="mb-4">
+                        <h5 class="font-medium text-gray-700 mb-2">Suggestions:</h5>
+                        {% for suggestion in question.ai_feedback.suggestions %}
+                        <div class="ai-suggestion">
+                          <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                          {{ suggestion }}
+                        </div>
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+                      
+                      {% if question.ai_feedback.specific_issues %}
+                      <div class="mb-4">
+                        <h5 class="font-medium text-gray-700 mb-2">Issues Found:</h5>
+                        {% for issue in question.ai_feedback.specific_issues %}
+                        <div class="ai-suggestion bg-red-50 border-red-200">
+                          <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                          {{ issue }}
+                        </div>
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+                      
+                      {% if question.ai_feedback.recommended_changes %}
+                      <div class="mb-4">
+                        <h5 class="font-medium text-gray-700 mb-2">Recommended Changes:</h5>
+                        {% for change in question.ai_feedback.recommended_changes %}
+                        <div class="ai-suggestion bg-blue-50 border-blue-200">
+                          <i class="fas fa-wrench text-blue-500 mr-2"></i>
+                          {{ change }}
+                        </div>
+                        {% endfor %}
+                      </div>
+                      {% endif %}
+
+                      {% if question.ai_feedback.improved_question and question.ai_feedback.improved_question != question.text %}
+                      <div class="mb-4">
+                        <h5 class="font-medium text-gray-700 mb-2">Improved Question:</h5>
+                        <div class="ai-suggestion bg-green-50 border-green-200">
+                          <i class="fas fa-star text-green-500 mr-2"></i>
+                          {{ question.ai_feedback.improved_question }}
+                        </div>
+                      </div>
+                      {% endif %}
+                      
+                      {% if not question.ai_feedback.suggestions and not question.ai_feedback.specific_issues %}
+                      <p class="text-green-600 bg-green-50 p-3 rounded-lg">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        No major issues found. Question appears to be well-structured.
+                      </p>
+                      {% endif %}
+                      
+                    {% elif question.ai_feedback and question.ai_feedback.status == 'processing' %}
+                      <div class="ai-processing text-center">
+                        <i class="fas fa-sync-alt animate-spin text-2xl text-yellow-500 mb-2"></i>
+                        <p class="text-yellow-700 font-medium">AI is analyzing this question...</p>
+                        <p class="text-yellow-600 text-sm">This may take a few seconds.</p>
+                      </div>
+                    {% else %}
+                      <div class="text-center py-4">
+                        <i class="fas fa-robot text-3xl text-gray-400 mb-3"></i>
+                        <p class="text-gray-500 mb-3">This question hasn't been analyzed by AI yet.</p>
+                        <button type="button" 
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                onclick="analyzeQuestion('{{ question.question_id }}')">
+                          <i class="fas fa-robot mr-2"></i>Analyze with AI
+                        </button>
+                      </div>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <div class="text-center py-8">
+            <i class="fas fa-check-circle text-green-400 text-3xl md:text-4xl mb-4"></i>
+            <p class="text-gray-500 text-sm md:text-base">No questions pending review</p>
+            <p class="text-xs md:text-sm text-gray-400 mt-2">All questions have been reviewed and processed.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Pagination Section -->
+      {% if total_pages > 1 %}
+      <div class="bg-white p-3 md:p-4 rounded-xl shadow-md">
+        <div class="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+          <!-- Page Info -->
+          <div class="text-xs md:text-sm text-gray-600 pagination-info text-center md:text-left">
+            Showing {{ ((current_page - 1) * page_size) + 1 }} to 
+            {% if current_page * page_size > total_count %}{{ total_count }}{% else %}{{ current_page * page_size }}{% endif %} of 
+            {{ total_count }} entries
+          </div>
+          
+          <!-- Page Size Selector -->
+          <div class="flex items-center space-x-2">
+            <span class="text-xs md:text-sm text-gray-600 hidden sm:inline">Show:</span>
+            <select id="per-page-select" class="form-select input-focus p-1 border border-gray-300 rounded text-xs md:text-sm">
+              <option value="5" {% if page_size == 5 %}selected{% endif %}>5</option>
+              <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+              <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+              <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+              <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+            </select>
+            <span class="text-xs md:text-sm text-gray-600 hidden sm:inline">per page</span>
+          </div>
+          
+          <!-- Pagination Controls -->
+          <div class="flex items-center space-x-1">
+            <!-- First Page -->
+            <button onclick="goToPage(1)" 
+                    class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == 1 %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
+                    {% if current_page == 1 %}disabled{% endif %}
+                    title="First Page">
+              <i class="fas fa-angle-double-left"></i>
+            </button>
+            
+            <!-- Previous Page -->
+            <button onclick="goToPage('{{ current_page - 1 }}')" 
+                    class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == 1 %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
+                    {% if current_page == 1 %}disabled{% endif %}
+                    title="Previous Page">
+              <i class="fas fa-angle-left"></i>
+            </button>
+            
+            <!-- Page Numbers -->
+            {% set start_page = [current_page - 2, 1]|max %}
+            {% set end_page = [current_page + 2, total_pages]|min %}
+            
+            {% for p in range(start_page, end_page + 1) %}
+              {% if p == current_page %}
+              <button class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-blue-500 bg-blue-500 text-white rounded pagination-btn">
+                {{ p }}
+              </button>
+              {% else %}
+              <button onclick="goToPage('{{ p }}')" 
+                      class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 bg-white text-gray-700 rounded pagination-btn">
+                {{ p }}
+              </button>
+              {% endif %}
+            {% endfor %}
+            
+            <!-- Next Page -->
+            <button onclick="goToPage('{{ current_page + 1 }}')" 
+                    class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == total_pages %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
+                    {% if current_page == total_pages %}disabled{% endif %}
+                    title="Next Page">
+              <i class="fas fa-angle-right"></i>
+            </button>
+            
+            <!-- Last Page -->
+            <button onclick="goToPage('{{ total_pages }}')" 
+                    class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == total_pages %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
+                    {% if current_page == total_pages %}disabled{% endif %}
+                    title="Last Page">
+              <i class="fas fa-angle-double-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Manage Tab Content -->
     <div id="manage-tab" class="tab-content">
-      <div
-        class="bg-white rounded-xl shadow-md p-4 md:p-6 border border-gray-100"
-      >
-        <div
-          class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6"
-        >
-          <h2
-            class="text-xl font-semibold text-gray-800 flex items-center mb-4 md:mb-0"
-          >
+      <div class="bg-white rounded-xl shadow-md p-4 md:p-6 border border-gray-100">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 flex items-center mb-4 md:mb-0">
             <i class="fas fa-database text-green-600 mr-3"></i> Question Bank
           </h2>
-          <span
-            class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm"
-          >
-            <span id="bank-count">{{ bank_count }}</span> questions in bank
+          <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+            {{ bank_count }} questions in bank
           </span>
         </div>
         <p class="text-gray-600 mb-6">
@@ -483,28 +1041,15 @@ System{% endblock %} {% block extra_head %}
 
         <!-- Bulk Actions Section -->
         <div class="bulk-actions mb-6">
-          <div
-            class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-          >
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div class="flex items-center">
-              <input
-                type="checkbox"
-                id="select-all-checkbox-bank"
-                class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3"
-              />
-              <label
-                for="select-all-checkbox-bank"
-                class="text-sm font-medium text-gray-700"
-              >
+              <input type="checkbox" id="select-all-checkbox-bank" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mr-3">
+              <label for="select-all-checkbox-bank" class="text-sm font-medium text-gray-700">
                 Select all questions on this page
               </label>
             </div>
             <div class="flex flex-wrap gap-2">
-              <button
-                id="bulk-delete-btn-bank"
-                class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                disabled
-              >
+              <button id="bulk-delete-btn-bank" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>
                 <i class="fas fa-trash mr-2"></i>Delete Selected
               </button>
             </div>
@@ -513,85 +1058,227 @@ System{% endblock %} {% block extra_head %}
 
         <!-- Questions Table Section -->
         <div class="bg-white p-4 md:p-6 rounded-xl shadow-md mb-6 md:mb-8">
-          <div
-            class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4"
-          >
-            <h2
-              class="text-lg md:text-xl font-semibold mb-2 md:mb-0 flex items-center text-green-700"
-            >
+          <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+            <h2 class="text-lg md:text-xl font-semibold mb-2 md:mb-0 flex items-center text-green-700">
               <i class="fas fa-list mr-2"></i> Approved Questions
             </h2>
             <div class="text-sm text-gray-600 mobile-text-sm">
-              Page <span id="bank-current-page">{{ current_page }}</span> of
-              <span id="bank-total-pages">{{ total_pages }}</span>
+              Page {{ current_page }} of {{ total_pages }}
             </div>
           </div>
 
-          <div class="table-container" id="bank-table-container">
-            <!-- Bank questions table will be loaded here dynamically -->
+          <div class="table-container">
+            {% if bank_questions %}
+            <table class="min-w-full divide-y divide-gray-200 mobile-table">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
+                    <input type="checkbox" id="select-all-checkbox-bank" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                  </th>
+                  <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S no.</th>
+                  <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question</th>
+                  <th class="hidden md:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
+                  <th class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tags</th>
+                  <th class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correct Answer</th>
+                  <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                  <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                {% for question in bank_questions %}
+                {% set serial_no = (current_page - 1) * page_size + loop.index %}
+                {% set tags_string = question.tags|join(', ') if question.tags else '' %}
+                {% set tags_display = tags_string[:30] if tags_string|length > 30 else tags_string %}
+                {% set is_auto_generated = question.get('source') == 'auto_generated' %}
+                <tr class="hover:bg-gray-50">
+                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap">
+                    <input type="checkbox" class="question-checkbox-bank h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-question-id="{{ question.question_id }}">
+                  </td>
+                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm font-mono">
+                    {{ serial_no }}
+                  </td>
+                  <td class="px-3 py-2 md:px-6 md:py-4 text-sm mobile-text-sm">
+                    <span class="truncate max-w-[200px] md:max-w-[300px] block" title="{{ question.text }}">
+                      {{ question.text[:100] }}{% if question.text|length > 100 %}...{% endif %}
+                    </span>
+                    {% if is_auto_generated %}
+                    <span class="inline-block bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded mt-1">
+                      <i class="fas fa-robot mr-1"></i>Auto-generated
+                    </span>
+                    {% endif %}
+                  </td>
+                  <td class="hidden md:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
+                    <span class="difficulty-badge difficulty-{{ question.difficulty }}">
+                      {{ question.difficulty|title }}
+                    </span>
+                  </td>
+                  <td class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm">
+                    {% if question.tags %}
+                    <span class="truncate max-w-[150px] block" title="{{ tags_string }}">
+                      {{ tags_display }}{% if tags_string|length > 30 %}...{% endif %}
+                    </span>
+                    {% else %}
+                    <span class="text-gray-400">No tags</span>
+                    {% endif %}
+                  </td>
+                  <td class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm">
+                    <span class="truncate max-w-[120px] block" title="{{ question.correct_answer }}">
+                      {{ question.correct_answer[:30] }}{% if question.correct_answer|length > 30 %}...{% endif %}
+                    </span>
+                  </td>
+                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
+                    {% if is_auto_generated %}
+                      <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">
+                        Auto
+                      </span>
+                    {% else %}
+                      <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                        Manual
+                      </span>
+                    {% endif %}
+                  </td>
+                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
+                    <div class="action-buttons flex space-x-2">
+                      <button type="button" 
+                              class="action-btn text-blue-600 hover:text-blue-800 edit-bank-question-btn" 
+                              title="Edit Question"
+                              data-question-id="{{ question.question_id }}"
+                              data-question-text="{{ question.text }}"
+                              data-question-options="{{ question.options|tojson|forceescape }}"
+                              data-correct-answer="{{ question.correct_answer }}"
+                              data-difficulty="{{ question.difficulty }}"
+                              data-tags="{{ question.tags|join(',') if question.tags else '' }}">
+                        <i class="fas fa-edit text-sm md:text-base"></i>
+                      </button>
+                      <button type="button" 
+                              class="action-btn text-red-600 hover:text-red-800" 
+                              title="Delete"
+                              onclick="deleteQuestion('{{ question.question_id }}')">
+                        <i class="fas fa-trash text-sm md:text-base"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <div class="text-center py-8">
+              <i class="fas fa-database text-gray-400 text-3xl md:text-4xl mb-4"></i>
+              <p class="text-gray-500 text-sm md:text-base">No questions in bank</p>
+              <p class="text-xs md:text-sm text-gray-400 mt-2">Questions will appear here after they are approved.</p>
+            </div>
+            {% endif %}
           </div>
         </div>
 
-        <!-- Pagination Section -->
-        <div
-          id="bank-pagination"
-          class="bg-white p-3 md:p-4 rounded-xl shadow-md"
-        >
-          <!-- Pagination will be loaded here dynamically -->
+        <!-- Pagination Section for Bank -->
+        {% if total_pages > 1 %}
+        <div class="bg-white p-3 md:p-4 rounded-xl shadow-md">
+          <div class="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+            <!-- Page Info -->
+            <div class="text-xs md:text-sm text-gray-600 pagination-info text-center md:text-left">
+              Showing {{ ((current_page - 1) * page_size) + 1 }} to 
+              {% if current_page * page_size > bank_count %}{{ bank_count }}{% else %}{{ current_page * page_size }}{% endif %} of 
+              {{ bank_count }} entries
+            </div>
+            
+            <!-- Page Size Selector -->
+            <div class="flex items-center space-x-2">
+              <span class="text-xs md:text-sm text-gray-600 hidden sm:inline">Show:</span>
+              <select id="per-page-select-bank" class="form-select input-focus p-1 border border-gray-300 rounded text-xs md:text-sm">
+                <option value="5" {% if page_size == 5 %}selected{% endif %}>5</option>
+                <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+                <option value="25" {% if page_size == 25 %}selected{% endif %}>25</option>
+                <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+                <option value="100" {% if page_size == 100 %}selected{% endif %}>100</option>
+              </select>
+              <span class="text-xs md:text-sm text-gray-600 hidden sm:inline">per page</span>
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div class="flex items-center space-x-1">
+              <!-- First Page -->
+              <button onclick="goToPageBank(1)" 
+                      class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == 1 %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
+                      {% if current_page == 1 %}disabled{% endif %}
+                      title="First Page">
+                <i class="fas fa-angle-double-left"></i>
+              </button>
+              
+              <!-- Previous Page -->
+              <button onclick="goToPageBank('{{ current_page - 1 }}')" 
+                      class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == 1 %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
+                      {% if current_page == 1 %}disabled{% endif %}
+                      title="Previous Page">
+                <i class="fas fa-angle-left"></i>
+              </button>
+              
+              <!-- Page Numbers -->
+              {% set start_page = [current_page - 2, 1]|max %}
+              {% set end_page = [current_page + 2, total_pages]|min %}
+              
+              {% for p in range(start_page, end_page + 1) %}
+                {% if p == current_page %}
+                <button class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-blue-500 bg-blue-500 text-white rounded pagination-btn">
+                  {{ p }}
+                </button>
+                {% else %}
+                <button onclick="goToPageBank('{{ p }}')" 
+                        class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 bg-white text-gray-700 rounded pagination-btn">
+                  {{ p }}
+                </button>
+                {% endif %}
+              {% endfor %}
+              
+              <!-- Next Page -->
+              <button onclick="goToPageBank('{{ current_page + 1 }}')" 
+                      class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == total_pages %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
+                      {% if current_page == total_pages %}disabled{% endif %}
+                      title="Next Page">
+                <i class="fas fa-angle-right"></i>
+              </button>
+              
+              <!-- Last Page -->
+              <button onclick="goToPageBank('{{ total_pages }}')" 
+                      class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn {% if current_page == total_pages %}bg-gray-100 text-gray-400 cursor-not-allowed{% else %}bg-white text-gray-700{% endif %}"
+                      {% if current_page == total_pages %}disabled{% endif %}
+                      title="Last Page">
+                <i class="fas fa-angle-double-right"></i>
+              </button>
+            </div>
+          </div>
         </div>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
 
 <!-- Edit Question Modal -->
-<div
-  id="edit-modal"
-  class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50 hidden"
->
-  <div
-    class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-2 md:mx-0 max-h-[90vh] overflow-y-auto"
-  >
+<div id="edit-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-2 md:p-4 z-50 hidden">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-2 md:mx-0 max-h-[90vh] overflow-y-auto">
     <div class="px-4 md:px-6 py-4 border-b sticky top-0 bg-white">
-      <h2 class="text-lg md:text-xl font-semibold text-gray-800">
-        Edit Question
-      </h2>
+      <h2 class="text-lg md:text-xl font-semibold text-gray-800">Edit Question</h2>
     </div>
     <form id="edit-form" class="px-4 md:px-6 py-4">
-      <input type="hidden" id="edit-question_id" />
-      <input type="hidden" id="edit-question-type" />
+      <input type="hidden" id="edit-question_id">
+      <input type="hidden" id="edit-question-type">
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Question Text</label
-        >
-        <textarea
-          id="edit-text"
-          class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
-          rows="3"
-        ></textarea>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Question Text</label>
+        <textarea id="edit-text" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base" rows="3"></textarea>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         {% for i in range(4) %}
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1"
-            >Option {{ i+1 }}</label
-          >
-          <input
-            type="text"
-            id="edit-option-{{ i+1 }}"
-            class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
-          />
+          <label class="block text-sm font-medium text-gray-700 mb-1">Option {{ i+1 }}</label>
+          <input type="text" id="edit-option-{{ i+1 }}" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base">
         </div>
         {% endfor %}
       </div>
       <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Correct Answer</label
-        >
-        <select
-          id="edit-correct-answer"
-          class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
-        >
+        <label class="block text-sm font-medium text-gray-700 mb-1">Correct Answer</label>
+        <select id="edit-correct-answer" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base">
           <option value="">Select Correct Answer</option>
           {% for i in range(4) %}
           <option value="{{ i+1 }}">Option {{ i+1 }}</option>
@@ -599,45 +1286,23 @@ System{% endblock %} {% block extra_head %}
         </select>
       </div>
       <div class="mb-4" id="edit-difficulty-section">
-        <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Difficulty</label
-        >
-        <select
-          id="edit-difficulty"
-          class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
-        >
+        <label class="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+        <select id="edit-difficulty" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base">
           <option value="easy">Easy</option>
           <option value="intermediate">Intermediate</option>
           <option value="hard">Hard</option>
         </select>
       </div>
       <div class="mb-4" id="edit-tags-section">
-        <label class="block text-sm font-medium text-gray-700 mb-1"
-          >Tags (comma separated)</label
-        >
-        <input
-          type="text"
-          id="edit-tags"
-          class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base"
-          placeholder="tag1, tag2, tag3"
-        />
+        <label class="block text-sm font-medium text-gray-700 mb-1">Tags (comma separated)</label>
+        <input type="text" id="edit-tags" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm md:text-base" placeholder="tag1, tag2, tag3">
       </div>
     </form>
-    <div
-      class="px-4 md:px-6 py-4 border-t flex justify-end space-x-2 md:space-x-3 bg-white sticky bottom-0"
-    >
-      <button
-        type="button"
-        onclick="closeModal()"
-        class="px-3 md:px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors text-sm md:text-base"
-      >
+    <div class="px-4 md:px-6 py-4 border-t flex justify-end space-x-2 md:space-x-3 bg-white sticky bottom-0">
+      <button type="button" onclick="closeModal()" class="px-3 md:px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors text-sm md:text-base">
         Cancel
       </button>
-      <button
-        type="button"
-        onclick="submitEdit()"
-        class="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm md:text-base"
-      >
+      <button type="button" onclick="submitEdit()" class="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm md:text-base">
         Save Changes
       </button>
     </div>
@@ -645,21 +1310,14 @@ System{% endblock %} {% block extra_head %}
 </div>
 
 <!-- Toast Notification -->
-<div
-  id="toast"
-  class="fixed top-4 right-4 p-4 rounded-lg shadow-lg bg-white border-l-4 border-green-500 transform translate-x-full transition-transform duration-300 z-50 max-w-sm hidden"
->
+<div id="toast" class="fixed top-4 right-4 p-4 rounded-lg shadow-lg bg-white border-l-4 border-green-500 transform translate-x-full transition-transform duration-300 z-50 max-w-sm hidden">
   <div class="flex items-start">
     <div class="flex-shrink-0">
       <i class="fas fa-check-circle text-green-500"></i>
     </div>
     <div class="ml-3">
-      <p id="toast-message" class="text-sm font-medium text-gray-800">
-        Success!
-      </p>
-      <p id="toast-description" class="mt-1 text-sm text-gray-600">
-        Operation completed successfully.
-      </p>
+      <p id="toast-message" class="text-sm font-medium text-gray-800">Success!</p>
+      <p id="toast-description" class="mt-1 text-sm text-gray-600">Operation completed successfully.</p>
     </div>
     <button class="ml-4 flex-shrink-0 focus:outline-none" onclick="hideToast()">
       <i class="fas fa-times text-gray-400"></i>
@@ -668,706 +1326,1168 @@ System{% endblock %} {% block extra_head %}
 </div>
 
 <!-- Loading Overlay -->
-<div
-  id="loading-overlay"
-  class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden"
->
+<div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
   <div class="bg-white rounded-lg p-6 flex items-center shadow-xl">
-    <div
-      class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4 border-t-blue-500 animate-spin"
-    ></div>
+    <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4 border-t-blue-500 animate-spin"></div>
     <p class="ml-4 text-gray-800">Processing, please wait...</p>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
-<script>
-  // Global state management
-  const initialState = {
-    current_page: Number('{{ current_page|default(1) }}'),
-    page_size: Number('{{ page_size|default(10) }}'),
-    total_pages: Number('{{ total_pages|default(1) }}'),
-    total_count: Number('{{ total_count|default(0) }}')
-  };
+{% endblock %}
 
-  let currentState = {
-      review: {
-          currentPage: initialState.current_page,
-          pageSize: initialState.page_size,
-          totalPages: initialState.total_pages,
-          totalCount: initialState.total_count,
-          selectedQuestions: new Set()
-      },
-      bank: {
-          currentPage: initialState.current_page,
-          pageSize: initialState.page_size,
-          totalPages: initialState.total_pages,
-          totalCount: initialState.total_count,
-          selectedQuestions: new Set()
-      }
-  };
+{% block extra_js %}
+<script>
+  // Global state
+  let selectedQuestions = new Set();
+  let selectedBankQuestions = new Set();
+  let selectedStudents = new Set();
+  let availableKeywords = [];
+  let currentFilter = 'all';
 
   // Initialize the page
   document.addEventListener('DOMContentLoaded', function() {
-      initializeTabs();
-      initializeFileUploads();
-      initializeManualForm();
-      loadReviewTab();
-      loadBankTab();
+    initializeTabs();
+    initializeFileUploads();
+    initializeManualForm();
+    initializeQuestionReview();
+    initializeBankSection();
+    initializeAutomatedQuestionGeneration();
+    initializeQuestionFilters();
   });
 
   // Tab functionality
   function initializeTabs() {
-      const tabButtons = document.querySelectorAll('.tab-button');
-      tabButtons.forEach(button => {
-          button.addEventListener('click', () => {
-              const tab = button.getAttribute('data-tab');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const tab = button.getAttribute('data-tab');
+        
+        // Update active tab button
+        document.querySelectorAll('.tab-button').forEach(btn => {
+          btn.classList.remove('active', 'text-blue-600', 'border-blue-600');
+          btn.classList.add('text-gray-600');
+        });
+        button.classList.add('active', 'text-blue-600', 'border-blue-600');
+        button.classList.remove('text-gray-600');
+        
+        // Show active tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        document.getElementById(`${tab}-tab`).classList.add('active');
 
-              // Update active tab button
-              document.querySelectorAll('.tab-button').forEach(btn => {
-                  btn.classList.remove('active', 'text-blue-600', 'border-blue-600');
-                  btn.classList.add('text-gray-600');
-              });
-              button.classList.add('active', 'text-blue-600', 'border-blue-600');
-              button.classList.remove('text-gray-600');
-
-              // Show active tab content
-              document.querySelectorAll('.tab-content').forEach(content => {
-                  content.classList.remove('active');
-              });
-              document.getElementById(`${tab}-tab`).classList.add('active');
-
-              // Load data for the active tab if needed
-              if (tab === 'review') {
-                  loadReviewTab();
-              } else if (tab === 'manage') {
-                  loadBankTab();
-              }
-          });
+        // Load students when upload tab is opened
+        if (tab === 'upload') {
+          setTimeout(loadStudentsWithResumes, 100);
+        }
       });
+    });
+  }
+
+  // Question Review functionality
+  function initializeQuestionReview() {
+    // Checkbox event listeners
+    const selectAllCheckbox = document.getElementById('select-all-review');
+    const selectAllTable = document.getElementById('select-all-table');
+    
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.question-checkbox');
+        checkboxes.forEach(checkbox => {
+          if (isQuestionVisible(checkbox.closest('.question-row'))) {
+            checkbox.checked = this.checked;
+            if (this.checked) {
+              selectedQuestions.add(checkbox.dataset.questionId);
+            } else {
+              selectedQuestions.delete(checkbox.dataset.questionId);
+            }
+          }
+        });
+        updateBulkActionButtons();
+      });
+    }
+
+    if (selectAllTable) {
+      selectAllTable.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.question-checkbox');
+        checkboxes.forEach(checkbox => {
+          if (isQuestionVisible(checkbox.closest('.question-row'))) {
+            checkbox.checked = this.checked;
+            if (this.checked) {
+              selectedQuestions.add(checkbox.dataset.questionId);
+            } else {
+              selectedQuestions.delete(checkbox.dataset.questionId);
+            }
+          }
+        });
+        updateBulkActionButtons();
+      });
+    }
+
+    // Individual checkbox events
+    document.querySelectorAll('.question-checkbox').forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        if (this.checked) {
+          selectedQuestions.add(this.dataset.questionId);
+        } else {
+          selectedQuestions.delete(this.dataset.questionId);
+        }
+        updateSelectAllCheckbox();
+        updateBulkActionButtons();
+      });
+    });
+
+    // Edit question button handlers
+    document.querySelectorAll('.edit-question-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const questionId = this.getAttribute('data-question-id');
+        const questionText = this.getAttribute('data-question-text');
+        const questionOptions = JSON.parse(this.getAttribute('data-question-options'));
+        const correctAnswer = this.getAttribute('data-correct-answer');
+        
+        editQuestion(questionId, questionText, questionOptions, correctAnswer, 'review');
+      });
+    });
+
+    // Per page select change
+    const perPageSelect = document.getElementById('per-page-select');
+    if (perPageSelect) {
+      perPageSelect.addEventListener('change', function() {
+        changePerPage(this.value);
+      });
+    }
+
+    // Bulk action buttons
+    const bulkApproveBtn = document.getElementById('bulk-approve-btn');
+    const bulkRejectBtn = document.getElementById('bulk-reject-btn');
+    
+    if (bulkApproveBtn) {
+      bulkApproveBtn.addEventListener('click', bulkApprove);
+    }
+    if (bulkRejectBtn) {
+      bulkRejectBtn.addEventListener('click', bulkReject);
+    }
+
+    // Add click handlers for question rows to toggle AI feedback
+    document.querySelectorAll('.question-row').forEach(row => {
+      row.addEventListener('click', function(e) {
+        // Don't trigger if clicking on action buttons or checkboxes
+        if (e.target.closest('button') || e.target.closest('input[type="checkbox"]')) {
+          return;
+        }
+        const questionId = this.getAttribute('data-question-id');
+        toggleAIFeedback(questionId);
+      });
+    });
+  }
+
+  // Bank section functionality
+  function initializeBankSection() {
+    // Select all functionality for bank
+    const selectAllBank = document.getElementById('select-all-checkbox-bank');
+    const bankCheckboxes = document.querySelectorAll('.question-checkbox-bank');
+
+    if (selectAllBank) {
+      selectAllBank.addEventListener('change', function() {
+        bankCheckboxes.forEach(checkbox => {
+          checkbox.checked = this.checked;
+          if (this.checked) {
+            selectedBankQuestions.add(checkbox.dataset.questionId);
+          } else {
+            selectedBankQuestions.delete(checkbox.dataset.questionId);
+          }
+        });
+        updateBulkActionButtonsBank();
+      });
+    }
+
+    // Individual checkbox events for bank
+    bankCheckboxes.forEach(checkbox => {
+      checkbox.addEventListener('change', function() {
+        if (this.checked) {
+          selectedBankQuestions.add(this.dataset.questionId);
+        } else {
+          selectedBankQuestions.delete(this.dataset.questionId);
+        }
+        updateSelectAllCheckboxBank();
+        updateBulkActionButtonsBank();
+      });
+    });
+
+    // Edit bank question button handlers
+    document.querySelectorAll('.edit-bank-question-btn').forEach(button => {
+      button.addEventListener('click', function() {
+        const questionId = this.getAttribute('data-question-id');
+        const questionText = this.getAttribute('data-question-text');
+        const questionOptions = JSON.parse(this.getAttribute('data-question-options'));
+        const correctAnswer = this.getAttribute('data-correct-answer');
+        const difficulty = this.getAttribute('data-difficulty');
+        const tags = this.getAttribute('data-tags');
+        
+        editQuestion(questionId, questionText, questionOptions, correctAnswer, 'bank', difficulty, tags);
+      });
+    });
+
+    // Bulk delete button for bank
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn-bank');
+    if (bulkDeleteBtn) {
+      bulkDeleteBtn.addEventListener('click', bulkDeleteBankQuestions);
+    }
+
+    // Per page select change for bank
+    const perPageSelectBank = document.getElementById('per-page-select-bank');
+    if (perPageSelectBank) {
+      perPageSelectBank.addEventListener('change', function() {
+        changePerPageBank(this.value);
+      });
+    }
+  }
+
+  // Automated question generation functionality
+  function initializeAutomatedQuestionGeneration() {
+    // Select all students checkbox
+    const selectAllStudents = document.getElementById('select-all-students');
+    if (selectAllStudents) {
+      selectAllStudents.addEventListener('change', selectAllStudentsHandler);
+    }
+
+    // Load students initially
+    loadStudentsWithResumes();
+  }
+
+  // Question filter functionality
+  function initializeQuestionFilters() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const filter = this.getAttribute('data-filter');
+        
+        // Update active filter button
+        filterButtons.forEach(btn => {
+          btn.classList.remove('active', 'bg-blue-100', 'text-blue-800');
+          btn.classList.add('bg-gray-100', 'text-gray-800');
+        });
+        this.classList.add('active', 'bg-blue-100', 'text-blue-800');
+        this.classList.remove('bg-gray-100', 'text-gray-800');
+        
+        currentFilter = filter;
+        filterQuestions();
+      });
+    });
+  }
+
+  function filterQuestions() {
+    const questions = document.querySelectorAll('.question-row');
+    let visibleCount = 0;
+
+    questions.forEach(question => {
+      const source = question.getAttribute('data-source');
+      let shouldShow = false;
+
+      switch (currentFilter) {
+        case 'all':
+          shouldShow = true;
+          break;
+        case 'auto_generated':
+          shouldShow = source === 'auto_generated';
+          break;
+        case 'manual':
+          shouldShow = source === 'manual';
+          break;
+        default:
+          shouldShow = true;
+      }
+
+      if (shouldShow) {
+        question.style.display = '';
+        visibleCount++;
+      } else {
+        question.style.display = 'none';
+      }
+    });
+
+    // Update filtered count
+    document.getElementById('filtered-count').textContent = visibleCount;
+  }
+
+  function isQuestionVisible(questionRow) {
+    return questionRow.style.display !== 'none';
   }
 
   // File upload functionality
   function initializeFileUploads() {
-      const jsonFileInput = document.getElementById('json-file');
-      const csvFileInput = document.getElementById('csv-file');
-      const uploadFilesBtn = document.getElementById('upload-files-btn');
+    const jsonFileInput = document.getElementById('json-file');
+    const csvFileInput = document.getElementById('csv-file');
+    const uploadFilesBtn = document.getElementById('upload-files-btn');
 
-      if (jsonFileInput) {
-          jsonFileInput.addEventListener('change', function(e) {
-              const fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
-              document.getElementById('json-file-name').textContent = fileName;
-          });
-      }
+    if (jsonFileInput) {
+      jsonFileInput.addEventListener('change', function(e) {
+        const fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+        document.getElementById('json-file-name').textContent = fileName;
+      });
+    }
 
-      if (csvFileInput) {
-          csvFileInput.addEventListener('change', function(e) {
-              const fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
-              document.getElementById('csv-file-name').textContent = fileName;
-          });
-      }
+    if (csvFileInput) {
+      csvFileInput.addEventListener('change', function(e) {
+        const fileName = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+        document.getElementById('csv-file-name').textContent = fileName;
+      });
+    }
 
-      if (uploadFilesBtn) {
-          uploadFilesBtn.addEventListener('click', handleFileUpload);
-      }
+    if (uploadFilesBtn) {
+      uploadFilesBtn.addEventListener('click', handleFileUpload);
+    }
   }
 
   // Manual form functionality
   function initializeManualForm() {
-      const manualForm = document.getElementById('manual-question-form');
-      if (manualForm) {
-          manualForm.addEventListener('submit', handleManualQuestionSubmit);
-      }
+    const manualForm = document.getElementById('manual-question-form');
+    if (manualForm) {
+      manualForm.addEventListener('submit', handleManualQuestionSubmit);
+    }
   }
 
-  // Load review tab data
-  async function loadReviewTab() {
+  // ========== AUTOMATED QUESTION GENERATION FUNCTIONS ==========
+
+  function loadStudentsWithResumes() {
+    const studentsList = document.getElementById('students-list');
+    studentsList.innerHTML = `
+        <div class="text-center py-4">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
+            <p class="mt-2 text-gray-500 text-sm">Loading students with resumes...</p>
+        </div>
+    `;
+
+    fetch('/api/students-with-resumes')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayStudentsList(data.students);
+            } else {
+                studentsList.innerHTML = `
+                    <div class="text-center py-4 text-red-500">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        Error loading students: ${data.error}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading students:', error);
+            studentsList.innerHTML = `
+                <div class="text-center py-4 text-red-500">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Error loading students
+                </div>
+            `;
+        });
+  }
+
+  function displayStudentsList(students) {
+    const studentsList = document.getElementById('students-list');
+    
+    if (students.length === 0) {
+        studentsList.innerHTML = `
+            <div class="text-center py-4 text-gray-500">
+                <i class="fas fa-file-alt text-3xl mb-2"></i>
+                <p>No students with uploaded resumes found</p>
+            </div>
+        `;
+        return;
+    }
+
+    studentsList.innerHTML = students.map(student => `
+        <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg mb-2 hover:bg-gray-50 student-card">
+            <div class="flex items-center space-x-3">
+                <input 
+                    type="checkbox" 
+                    class="student-checkbox h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    value="${student.scholar_id}"
+                    onchange="toggleStudentSelection('${student.scholar_id}')"
+                >
+                <div>
+                    <div class="font-medium text-gray-800">${student.name}</div>
+                    <div class="text-sm text-gray-600">
+                        ${student.scholar_id} • ${student.course} • Sem ${student.semester}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                        Resume: ${student.resume_original_name}
+                        ${student.resume_processed ? '• Processed' : '• Not Processed'}
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-gray-500">
+                    ${new Date(student.resume_uploaded_at).toLocaleDateString()}
+                </div>
+                <div class="text-xs text-purple-600">
+                    ${student.resume_keywords ? student.resume_keywords.length + ' keywords' : 'No keywords'}
+                </div>
+            </div>
+        </div>
+    `).join('');
+  }
+
+  function toggleStudentSelection(studentId) {
+    const checkbox = document.querySelector(`.student-checkbox[value="${studentId}"]`);
+    if (checkbox.checked) {
+        selectedStudents.add(studentId);
+    } else {
+        selectedStudents.delete(studentId);
+    }
+    updateGenerateButton();
+  }
+
+  function selectAllStudentsHandler() {
+    const selectAll = document.getElementById('select-all-students');
+    const checkboxes = document.querySelectorAll('.student-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+        if (selectAll.checked) {
+            selectedStudents.add(checkbox.value);
+        } else {
+            selectedStudents.delete(checkbox.value);
+        }
+    });
+    updateGenerateButton();
+  }
+
+  function updateGenerateButton() {
+    const generateBtn = document.getElementById('generate-questions-btn');
+    const extractKeywordsBtn = document.getElementById('extract-keywords-btn');
+    const hasSelected = selectedStudents.size > 0;
+    
+    generateBtn.disabled = !hasSelected;
+    extractKeywordsBtn.disabled = !hasSelected;
+  }
+
+  function extractKeywords() {
+    if (selectedStudents.size === 0) {
+        showToast('Error', 'Please select at least one student', 'error');
+        return;
+    }
+
+    showLoading();
+
+    fetch('/api/extract-keywords', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            student_ids: Array.from(selectedStudents)
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            availableKeywords = data.keywords;
+            displayKeywords();
+            showToast('Success', `Extracted ${data.total_keywords} keywords`, 'success');
+        } else {
+            showToast('Error', data.error, 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error extracting keywords:', error);
+        showToast('Error', 'Error extracting keywords', 'error');
+    });
+  }
+
+  function displayKeywords() {
+    const keywordsContainer = document.getElementById('keywords-list');
+    const keywordsPreview = document.getElementById('keywords-preview');
+    
+    keywordsContainer.innerHTML = availableKeywords.map(keyword => `
+        <label class="inline-flex items-center bg-white border border-gray-300 rounded-full px-3 py-1 cursor-pointer hover:bg-gray-50 transition-colors keyword-item">
+            <input type="checkbox" class="keyword-checkbox hidden" value="${keyword}">
+            <span class="text-sm text-gray-700">${keyword}</span>
+        </label>
+    `).join('');
+    
+    keywordsPreview.classList.remove('hidden');
+    
+    // Add click handlers for keyword selection
+    document.querySelectorAll('.keyword-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            this.parentElement.classList.toggle('bg-purple-100', this.checked);
+            this.parentElement.classList.toggle('border-purple-500', this.checked);
+        });
+    });
+  }
+
+  function selectAllKeywords() {
+    document.querySelectorAll('.keyword-checkbox').forEach(checkbox => {
+        checkbox.checked = true;
+        checkbox.parentElement.classList.add('bg-purple-100', 'border-purple-500');
+    });
+  }
+
+  function generateQuestionsFromResumes() {
+    if (selectedStudents.size === 0) {
+        showToast('Error', 'Please select at least one student', 'error');
+        return;
+    }
+
+    const questionCount = document.getElementById('question-count').value;
+    const difficulty = document.getElementById('question-difficulty').value;
+    const questionType = document.getElementById('question-type').value;
+    
+    // Get selected keywords
+    const selectedKeywords = Array.from(document.querySelectorAll('.keyword-checkbox:checked'))
+        .map(checkbox => checkbox.value);
+
+    showLoading();
+
+    fetch('/api/generate-questions-from-resumes', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            student_ids: Array.from(selectedStudents),
+            question_count: parseInt(questionCount),
+            difficulty: difficulty,
+            question_type: questionType,
+            selected_keywords: selectedKeywords
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showToast('Success', data.message, 'success');
+            // Switch to review tab to see generated questions
+            document.querySelector('[data-tab="review"]').click();
+        } else {
+            showToast('Error', data.error, 'error');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error generating questions:', error);
+        showToast('Error', 'Error generating questions', 'error');
+    });
+  }
+
+  // ========== QUESTION REVIEW FUNCTIONS ==========
+
+  // AI Review Functions
+  function analyzeQuestion(questionId) {
+    console.log('Analyzing question:', questionId);
+    showLoading();
+    
+    fetch(`/admin/questions/api/review/analyze/${questionId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'}
+    })
+    .then(response => response.json())
+    .then(data => {
+      hideLoading();
+      if (data.success) {
+        showToast('Success', 'Question analyzed with AI', 'success');
+        // Update the AI status in the row
+        updateQuestionAIStatus(questionId, 'analyzed');
+      } else {
+        showToast('Error', data.error || 'Failed to analyze question', 'error');
+      }
+    })
+    .catch(error => {
+      hideLoading();
+      console.error('Error analyzing question:', error);
+      showToast('Error', 'Error analyzing question: ' + error.message, 'error');
+    });
+  }
+
+  function analyzeAllQuestions() {
+    if (confirm('This will analyze all pending questions with AI. This may take several minutes. Continue?')) {
       showLoading();
-      try {
-          const response = await fetch(`/admin/questions/api/review/questions?page=${currentState.review.currentPage}&page_size=${currentState.review.pageSize}`);
-          const data = await response.json();
-
-          if (data.questions) {
-              renderReviewTable(data.questions);
-              renderReviewPagination(data);
-              updateReviewCounts(data.total_count);
-              initializeReviewEventListeners();
-          }
-      } catch (error) {
-          showToast('Error', 'Failed to load review questions: ' + error.message, 'error');
-      } finally {
-          hideLoading();
-      }
+      
+      fetch('/admin/questions/api/review/analyze-all', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+      })
+      .then(response => response.json())
+      .then(data => {
+        hideLoading();
+        if (data.success) {
+          showToast('Success', 'AI analysis started for all questions', 'success');
+          // Start polling for status
+          pollAIStatus();
+        } else {
+          showToast('Error', data.error || 'Failed to start analysis', 'error');
+        }
+      })
+      .catch(error => {
+        hideLoading();
+        console.error('Error starting analysis:', error);
+        showToast('Error', 'Error starting analysis: ' + error.message, 'error');
+      });
+    }
   }
 
-  // Load bank tab data
-  async function loadBankTab() {
+  function applyAISuggestions(questionId) {
+    if (confirm('Apply AI suggestions to this question? This will update the question text and options.')) {
       showLoading();
-      try {
-          const response = await fetch(`/admin/questions/api/bank/questions?page=${currentState.bank.currentPage}&page_size=${currentState.bank.pageSize}`);
-          const data = await response.json();
+      
+      fetch(`/admin/questions/api/review/apply-ai-suggestions/${questionId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+      })
+      .then(response => response.json())
+      .then(data => {
+        hideLoading();
+        if (data.success) {
+          showToast('Success', 'AI suggestions applied successfully', 'success');
+          // Update the question row with new data
+          const updatedQuestion = data.updated_question;
+          updateQuestionRowInDOM(questionId, updatedQuestion.text, updatedQuestion.options, updatedQuestion.correct_answer);
+        } else {
+          showToast('Error', data.error || 'Failed to apply suggestions', 'error');
+        }
+      })
+      .catch(error => {
+        hideLoading();
+        console.error('Error applying suggestions:', error);
+        showToast('Error', 'Error applying suggestions: ' + error.message, 'error');
+      });
+    }
+  }
 
-          if (data.questions) {
-              renderBankTable(data.questions);
-              renderBankPagination(data);
-              updateBankCounts(data.total_count);
-              initializeBankEventListeners();
+  function checkAIStatus() {
+    fetch('/admin/questions/api/review/ai-status')
+      .then(response => response.json())
+      .then(data => {
+        if (data.is_processing) {
+          showToast('AI Status', `Processing: ${data.processed_count} done, ${data.pending_analysis} pending`, 'info');
+        } else {
+          showToast('AI Status', `Ready: ${data.analyzed_count} analyzed, ${data.pending_analysis} pending`, 'success');
+        }
+      })
+      .catch(error => {
+        console.error('Error checking AI status:', error);
+        showToast('Error', 'Failed to check AI status', 'error');
+      });
+  }
+
+  function pollAIStatus() {
+    // Poll every 5 seconds for status updates
+    const interval = setInterval(() => {
+      fetch('/admin/questions/api/review/ai-status')
+        .then(response => response.json())
+        .then(data => {
+          if (!data.is_processing || data.pending_analysis === 0) {
+            clearInterval(interval);
+            showToast('Success', 'AI analysis completed!', 'success');
+            // Refresh the AI status for all questions
+            document.querySelectorAll('.question-row').forEach(row => {
+              const questionId = row.getAttribute('data-question-id');
+              updateQuestionAIStatus(questionId, 'analyzed');
+            });
           }
-      } catch (error) {
-          showToast('Error', 'Failed to load bank questions: ' + error.message, 'error');
-      } finally {
+        })
+        .catch(error => {
+          console.error('Error polling AI status:', error);
+          clearInterval(interval);
+        });
+    }, 5000);
+  }
+
+  // Toggle AI feedback visibility
+  function toggleAIFeedback(questionId) {
+    const feedbackRow = document.getElementById(`ai-feedback-${questionId}`);
+    if (feedbackRow) {
+      feedbackRow.classList.toggle('hidden');
+    }
+  }
+
+  function updateQuestionAIStatus(questionId, status) {
+    const statusCell = document.querySelector(`[data-question-id="${questionId}"] td:nth-child(7)`);
+    if (statusCell) {
+      if (status === 'analyzed') {
+        statusCell.innerHTML = `
+          <span class="ai-status-badge bg-green-100 text-green-800 flex items-center">
+            <i class="fas fa-robot mr-1 text-xs"></i>
+            Reviewed
+          </span>
+          <div class="text-xs text-gray-500 mt-1">85% confidence</div>
+        `;
+      } else if (status === 'processing') {
+        statusCell.innerHTML = `
+          <span class="ai-status-badge bg-yellow-100 text-yellow-800 flex items-center">
+            <i class="fas fa-sync-alt mr-1 text-xs animate-spin"></i>
+            Processing
+          </span>
+        `;
+      }
+    }
+  }
+
+  function approveQuestion(questionId) {
+    if (confirm('Are you sure you want to approve this question?')) {
+      showLoading();
+
+      fetch(`/admin/questions/api/questions/approve/${questionId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+      }).then(response => response.json())
+        .then(data => {
           hideLoading();
-      }
-  }
-
-  // Render review table
-  function renderReviewTable(questions) {
-      const container = document.getElementById('review-table-container');
-      if (!container) return;
-
-      if (questions.length === 0) {
-          container.innerHTML = `
-              <div class="text-center py-8">
-                  <i class="fas fa-check-circle text-green-400 text-3xl md:text-4xl mb-4"></i>
-                  <p class="text-gray-500 text-sm md:text-base">No questions pending review</p>
-                  <p class="text-xs md:text-sm text-gray-400 mt-2">All questions have been reviewed and processed.</p>
-              </div>
-          `;
-          return;
-      }
-
-      let tableHTML = `
-          <table class="min-w-full divide-y divide-gray-200 mobile-table">
-              <thead class="bg-gray-50">
-                  <tr>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
-                          <input type="checkbox" id="select-all-checkbox-review" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                      </th>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S no.</th>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question</th>
-                      <th class="hidden md:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Options</th>
-                      <th class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correct Answer</th>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-      `;
-
-      questions.forEach((question, index) => {
-          const serialNo = (currentState.review.currentPage - 1) * currentState.review.pageSize + index + 1;
-          const optionsString = question.options ? question.options.join(', ') : '';
-
-          tableHTML += `
-              <tr class="hover:bg-gray-50">
-                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap">
-                      <input type="checkbox" class="question-checkbox-review h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-question-id="${question.question_id}">
-                  </td>
-                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm font-mono">
-                      ${serialNo}
-                  </td>
-                  <td class="px-3 py-2 md:px-6 md:py-4 text-sm mobile-text-sm">
-                      <span class="truncate max-w-[200px] md:max-w-[300px] block" title="${question.text}">
-                          ${question.text ? question.text.substring(0, 100) + (question.text.length > 100 ? '...' : '') : 'No text'}
-                      </span>
-                  </td>
-                  <td class="hidden md:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm">
-                      <span class="truncate max-w-[150px] block" title="${optionsString}">
-                          ${optionsString.substring(0, 50)}${optionsString.length > 50 ? '...' : ''}
-                      </span>
-                  </td>
-                  <td class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm">
-                      <span class="truncate max-w-[120px] block" title="${question.correct_answer}">
-                          ${question.correct_answer ? question.correct_answer.substring(0, 30) + (question.correct_answer.length > 30 ? '...' : '') : 'No answer'}
-                      </span>
-                  </td>
-                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
-                      <span class="status-badge bg-yellow-100 text-yellow-800 text-xs">Pending</span>
-                  </td>
-                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
-                      <div class="action-buttons">
-                          <button data-action="edit"
-                                  data-question-id="${question.question_id}"
-                                  data-text="${question.text || ''}"
-                                  data-options="${question.options ? question.options.join('|||') : ''}"
-                                  data-correct-answer="${question.correct_answer || ''}"
-                                  class="action-btn text-blue-600 hover:text-blue-800 p-1 md:p-0"
-                                  title="Edit Question">
-                              <i class="fas fa-edit text-sm md:text-base"></i>
-                          </button>
-                          <button data-action="approve"
-                                  data-question-id="${question.question_id}"
-                                  class="action-btn text-green-600 hover:text-green-800 p-1 md:p-0"
-                                  title="Approve">
-                              <i class="fas fa-check text-sm md:text-base"></i>
-                          </button>
-                          <button data-action="reject"
-                                  data-question-id="${question.question_id}"
-                                  class="action-btn text-red-600 hover:text-red-800 p-1 md:p-0"
-                                  title="Reject">
-                              <i class="fas fa-times text-sm md:text-base"></i>
-                          </button>
-                      </div>
-                  </td>
-              </tr>
-          `;
-      });
-
-      tableHTML += `</tbody></table>`;
-      container.innerHTML = tableHTML;
-  }
-
-  // Render bank table
-  function renderBankTable(questions) {
-      const container = document.getElementById('bank-table-container');
-      if (!container) return;
-
-      if (questions.length === 0) {
-          container.innerHTML = `
-              <div class="text-center py-8">
-                  <i class="fas fa-database text-gray-400 text-3xl md:text-4xl mb-4"></i>
-                  <p class="text-gray-500 text-sm md:text-base">No questions in bank</p>
-                  <p class="text-xs md:text-sm text-gray-400 mt-2">Questions will appear here after they are approved.</p>
-              </div>
-          `;
-          return;
-      }
-
-      let tableHTML = `
-          <table class="min-w-full divide-y divide-gray-200 mobile-table">
-              <thead class="bg-gray-50">
-                  <tr>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
-                          <input type="checkbox" id="select-all-checkbox-bank" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                      </th>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S no.</th>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Question</th>
-                      <th class="hidden md:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Difficulty</th>
-                      <th class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tags</th>
-                      <th class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Correct Answer</th>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th class="px-3 py-2 md:px-6 md:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-              </thead>
-              <tbody class="bg-white divide-y divide-gray-200">
-      `;
-
-      questions.forEach((question, index) => {
-          const serialNo = (currentState.bank.currentPage - 1) * currentState.bank.pageSize + index + 1;
-          const tagsString = question.tags ? question.tags.join(', ') : '';
-
-          tableHTML += `
-              <tr class="hover:bg-gray-50">
-                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap">
-                      <input type="checkbox" class="question-checkbox-bank h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" data-question-id="${question.question_id}">
-                  </td>
-                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm font-mono">
-                      ${serialNo}
-                  </td>
-                  <td class="px-3 py-2 md:px-6 md:py-4 text-sm mobile-text-sm">
-                      <span class="truncate max-w-[200px] md:max-w-[300px] block" title="${question.text}">
-                          ${question.text ? question.text.substring(0, 100) + (question.text.length > 100 ? '...' : '') : 'No text'}
-                      </span>
-                  </td>
-                  <td class="hidden md:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
-                      <span class="difficulty-badge difficulty-${question.difficulty || 'intermediate'}">
-                          ${(question.difficulty || 'intermediate').charAt(0).toUpperCase() + (question.difficulty || 'intermediate').slice(1)}
-                      </span>
-                  </td>
-                  <td class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm">
-                      ${tagsString ? `
-                      <span class="truncate max-w-[150px] block" title="${tagsString}">
-                          ${tagsString.substring(0, 30)}${tagsString.length > 30 ? '...' : ''}
-                      </span>
-                      ` : '<span class="text-gray-400">No tags</span>'}
-                  </td>
-                  <td class="hidden lg:table-cell px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm mobile-text-sm">
-                      <span class="truncate max-w-[120px] block" title="${question.correct_answer}">
-                          ${question.correct_answer ? question.correct_answer.substring(0, 30) + (question.correct_answer.length > 30 ? '...' : '') : 'No answer'}
-                      </span>
-                  </td>
-                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
-                      <span class="status-badge bg-green-100 text-green-800 text-xs">Approved</span>
-                  </td>
-                  <td class="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap text-sm">
-                      <div class="action-buttons">
-                          <button data-action="edit"
-                                  data-question-id="${question.question_id}"
-                                  data-text="${question.text || ''}"
-                                  data-options="${question.options ? question.options.join('|||') : ''}"
-                                  data-correct-answer="${question.correct_answer || ''}"
-                                  data-difficulty="${question.difficulty || 'intermediate'}"
-                                  data-tags="${question.tags ? question.tags.join(',') : ''}"
-                                  class="action-btn text-blue-600 hover:text-blue-800 p-1 md:p-0"
-                                  title="Edit Question">
-                              <i class="fas fa-edit text-sm md:text-base"></i>
-                          </button>
-                          <button data-action="delete"
-                                  data-question-id="${question.question_id}"
-                                  class="action-btn text-red-600 hover:text-red-800 p-1 md:p-0"
-                                  title="Delete">
-                              <i class="fas fa-trash text-sm md:text-base"></i>
-                          </button>
-                      </div>
-                  </td>
-              </tr>
-          `;
-      });
-
-      tableHTML += `</tbody></table>`;
-      container.innerHTML = tableHTML;
-  }
-
-  // Initialize event listeners for review tab
-  function initializeReviewEventListeners() {
-      // Select all functionality
-      const selectAllReview = document.getElementById('select-all-checkbox-review');
-      const reviewCheckboxes = document.querySelectorAll('.question-checkbox-review');
-      const bulkApproveBtn = document.getElementById('bulk-approve-btn-review');
-      const bulkRejectBtn = document.getElementById('bulk-reject-btn-review');
-
-      if (selectAllReview) {
-          selectAllReview.addEventListener('change', function() {
-              reviewCheckboxes.forEach(checkbox => {
-                  checkbox.checked = this.checked;
-                  if (this.checked) {
-                      currentState.review.selectedQuestions.add(checkbox.dataset.questionId);
-                  } else {
-                      currentState.review.selectedQuestions.delete(checkbox.dataset.questionId);
-                  }
-              });
-              updateBulkActionButtonsReview();
-          });
-      }
-
-      // Individual checkbox events
-      reviewCheckboxes.forEach(checkbox => {
-          checkbox.addEventListener('change', function() {
-              if (this.checked) {
-                  currentState.review.selectedQuestions.add(this.dataset.questionId);
-              } else {
-                  currentState.review.selectedQuestions.delete(this.dataset.questionId);
-              }
-              updateSelectAllCheckboxReview();
-              updateBulkActionButtonsReview();
-          });
-      });
-
-      // Bulk action buttons
-      if (bulkApproveBtn) {
-          bulkApproveBtn.addEventListener('click', bulkApproveQuestions);
-      }
-      if (bulkRejectBtn) {
-          bulkRejectBtn.addEventListener('click', bulkRejectQuestions);
-      }
-
-      // Individual action buttons
-      document.querySelectorAll('#review-table-container button[data-action]').forEach(button => {
-          button.addEventListener('click', handleReviewAction);
-      });
-  }
-
-  // Initialize event listeners for bank tab
-  function initializeBankEventListeners() {
-      // Select all functionality
-      const selectAllBank = document.getElementById('select-all-checkbox-bank');
-      const bankCheckboxes = document.querySelectorAll('.question-checkbox-bank');
-      const bulkDeleteBtn = document.getElementById('bulk-delete-btn-bank');
-
-      if (selectAllBank) {
-          selectAllBank.addEventListener('change', function() {
-              bankCheckboxes.forEach(checkbox => {
-                  checkbox.checked = this.checked;
-                  if (this.checked) {
-                      currentState.bank.selectedQuestions.add(checkbox.dataset.questionId);
-                  } else {
-                      currentState.bank.selectedQuestions.delete(checkbox.dataset.questionId);
-                  }
-              });
-              updateBulkActionButtonsBank();
-          });
-      }
-
-      // Individual checkbox events
-      bankCheckboxes.forEach(checkbox => {
-          checkbox.addEventListener('change', function() {
-              if (this.checked) {
-                  currentState.bank.selectedQuestions.add(this.dataset.questionId);
-              } else {
-                  currentState.bank.selectedQuestions.delete(this.dataset.questionId);
-              }
-              updateSelectAllCheckboxBank();
-              updateBulkActionButtonsBank();
-          });
-      });
-
-      // Bulk action buttons
-      if (bulkDeleteBtn) {
-          bulkDeleteBtn.addEventListener('click', bulkDeleteQuestions);
-      }
-
-      // Individual action buttons
-      document.querySelectorAll('#bank-table-container button[data-action]').forEach(button => {
-          button.addEventListener('click', handleBankAction);
-      });
-  }
-
-  // Handle review actions
-  function handleReviewAction(event) {
-      const button = event.currentTarget;
-      const action = button.getAttribute('data-action');
-      const questionId = button.getAttribute('data-question-id');
-
-      switch (action) {
-          case 'approve':
-              approveQuestion(questionId);
-              break;
-          case 'reject':
-              rejectQuestion(questionId);
-              break;
-          case 'edit':
-              const text = button.getAttribute('data-text');
-              const options = button.getAttribute('data-options').split('|||');
-              const correctAnswer = button.getAttribute('data-correct-answer');
-              editQuestion(questionId, text, options, correctAnswer, 'intermediate', '', 'review');
-              break;
-      }
-  }
-
-  // Handle bank actions
-  function handleBankAction(event) {
-      const button = event.currentTarget;
-      const action = button.getAttribute('data-action');
-      const questionId = button.getAttribute('data-question-id');
-
-      switch (action) {
-          case 'delete':
-              deleteQuestion(questionId);
-              break;
-          case 'edit':
-              const text = button.getAttribute('data-text');
-              const options = button.getAttribute('data-options').split('|||');
-              const correctAnswer = button.getAttribute('data-correct-answer');
-              const difficulty = button.getAttribute('data-difficulty');
-              const tags = button.getAttribute('data-tags');
-              editQuestion(questionId, text, options, correctAnswer, difficulty, tags, 'bank');
-              break;
-      }
-  }
-
-  // Update counts
-  function updateReviewCounts(totalCount) {
-      const pendingCountEl = document.getElementById('pending-count');
-      if (pendingCountEl) {
-          pendingCountEl.textContent = totalCount;
-      }
-  }
-
-  function updateBankCounts(totalCount) {
-      const bankCountEl = document.getElementById('bank-count');
-      if (bankCountEl) {
-          bankCountEl.textContent = totalCount;
-      }
-  }
-
-  // The rest of your existing functions (handleFileUpload, handleManualQuestionSubmit, editQuestion, submitEdit, etc.)
-  // ... [Keep all your existing functions from the previous code]
-
-  // Only update the functions that cause page reloads to use AJAX instead
-
-  // Example of updated approveQuestion function:
-  async function approveQuestion(questionId) {
-      if (confirm('Are you sure you want to approve this question?')) {
-          showLoading();
-          try {
-              const response = await fetch(`/admin/questions/api/questions/approve/${questionId}`, {
-                  method: 'POST',
-                  headers: {'Content-Type': 'application/json'}
-              });
-              const data = await response.json();
-
-              if (data.success) {
-                  showToast('Success', 'Question approved successfully', 'success');
-                  // Reload the current tab data instead of entire page
-                  loadReviewTab();
-                  loadBankTab(); // Also reload bank to reflect new count
-              } else {
-                  showToast('Error', data.error || 'Failed to approve question', 'error');
-              }
-          } catch (error) {
-              showToast('Error', 'Error approving question: ' + error.message, 'error');
-          } finally {
-              hideLoading();
+          if (data.success) {
+            showToast('Success', 'Question approved successfully', 'success');
+            // Remove the question row from DOM instead of reloading
+            removeQuestionRow(questionId);
+          } else {
+            showToast('Error', data.error || 'Failed to approve question', 'error');
           }
-      }
+        }).catch(error => {
+          hideLoading();
+          console.error('Error approving question:', error);
+          showToast('Error', 'Error approving question: ' + error.message, 'error');
+        });
+    }
   }
 
-  // Similarly update rejectQuestion, deleteQuestion, bulk operations to use AJAX
+  function rejectQuestion(questionId) {
+    if (confirm('Are you sure you want to reject this question?')) {
+      showLoading();
 
-  // Pagination functions (update to use AJAX)
-  function goToPageReview(page) {
-      currentState.review.currentPage = page;
-      loadReviewTab();
+      fetch(`/admin/questions/api/questions/reject/${questionId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+      }).then(response => response.json())
+        .then(data => {
+          hideLoading();
+          if (data.success) {
+            showToast('Success', 'Question rejected successfully', 'success');
+            // Remove the question row from DOM instead of reloading
+            removeQuestionRow(questionId);
+          } else {
+            showToast('Error', data.error || 'Failed to reject question', 'error');
+          }
+        }).catch(error => {
+          hideLoading();
+          console.error('Error rejecting question:', error);
+          showToast('Error', 'Error rejecting question: ' + error.message, 'error');
+        });
+    }
+  }
+
+  // Edit question function
+  function editQuestion(questionId, text, options, correctAnswer, questionType = 'review', difficulty = 'intermediate', tags = '') {
+    console.log('Editing question:', questionId);
+    
+    document.getElementById('edit-question_id').value = questionId;
+    document.getElementById('edit-text').value = text;
+    document.getElementById('edit-question-type').value = questionType;
+    
+    // Fill options
+    for (let i = 0; i < 4; i++) {
+      const optionInput = document.getElementById(`edit-option-${i+1}`);
+      if (optionInput) {
+        optionInput.value = options[i] || '';
+      }
+    }
+    
+    // Set correct answer
+    let correctAnswerIndex = -1;
+    for (let i = 0; i < options.length; i++) {
+      if (options[i] === correctAnswer) {
+        correctAnswerIndex = i + 1;
+        break;
+      }
+    }
+    
+    const correctAnswerSelect = document.getElementById('edit-correct-answer');
+    if (correctAnswerSelect) {
+      correctAnswerSelect.value = correctAnswerIndex > 0 ? correctAnswerIndex.toString() : '';
+    }
+
+    // Show/hide additional fields based on question type
+    const difficultySection = document.getElementById('edit-difficulty-section');
+    const tagsSection = document.getElementById('edit-tags-section');
+
+    if (questionType === 'bank') {
+      difficultySection.style.display = 'block';
+      tagsSection.style.display = 'block';
+      document.getElementById('edit-difficulty').value = difficulty;
+      document.getElementById('edit-tags').value = tags;
+    } else {
+      difficultySection.style.display = 'none';
+      tagsSection.style.display = 'none';
+    }
+    
+    // Show modal
+    const modal = document.getElementById('edit-modal');
+    modal.classList.remove('hidden');
+  }
+
+  function submitEdit() {
+    const questionId = document.getElementById('edit-question_id').value;
+    const questionType = document.getElementById('edit-question-type').value;
+    const text = document.getElementById('edit-text').value;
+    const options = [
+      document.getElementById('edit-option-1').value,
+      document.getElementById('edit-option-2').value,
+      document.getElementById('edit-option-3').value,
+      document.getElementById('edit-option-4').value
+    ];
+    const correctAnswerIndex = document.getElementById('edit-correct-answer').value;
+    const correctAnswer = options[parseInt(correctAnswerIndex) - 1];
+
+    // Validation
+    if (!text || !options.every(opt => opt) || !correctAnswer) {
+      showToast('Error', 'All fields are required', 'error');
+      return;
+    }
+
+    showLoading();
+
+    const endpoint = questionType === 'bank' 
+      ? '/admin/questions/api/bank/update' 
+      : '/admin/questions/api/review/update';
+
+    const requestData = {
+      question_id: questionId,
+      action: 'update',
+      text: text,
+      options: options,
+      correct_answer: correctAnswer
+    };
+
+    // Add additional fields for bank questions
+    if (questionType === 'bank') {
+      requestData.difficulty = document.getElementById('edit-difficulty').value;
+      const tagsInput = document.getElementById('edit-tags').value;
+      requestData.tags = tagsInput ? tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag) : [];
+    }
+
+    fetch(endpoint, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(requestData)
+    }).then(response => response.json())
+      .then(data => {
+        hideLoading();
+        if (data.success) {
+          showToast('Success', 'Question updated successfully', 'success');
+          closeModal();
+          // Update the question row in DOM instead of reloading
+          updateQuestionRowInDOM(questionId, text, options, correctAnswer);
+        } else {
+          showToast('Error', data.error || 'Failed to update question', 'error');
+        }
+      }).catch(error => {
+        hideLoading();
+        console.error('Error updating question:', error);
+        showToast('Error', 'Error updating question: ' + error.message, 'error');
+      });
+  }
+
+  // Pagination functions
+  function goToPage(page) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', page);
+    window.location.href = url.toString();
   }
 
   function goToPageBank(page) {
-      currentState.bank.currentPage = page;
-      loadBankTab();
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', page);
+    url.searchParams.set('tab', 'manage');
+    window.location.href = url.toString();
   }
 
-  function changePerPageReview(perPage) {
-      currentState.review.pageSize = parseInt(perPage);
-      currentState.review.currentPage = 1;
-      loadReviewTab();
+  function changePerPage(perPage) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('page_size', perPage);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
   }
 
   function changePerPageBank(perPage) {
-      currentState.bank.pageSize = parseInt(perPage);
-      currentState.bank.currentPage = 1;
-      loadBankTab();
+    const url = new URL(window.location.href);
+    url.searchParams.set('page_size', perPage);
+    url.searchParams.set('page', 1);
+    url.searchParams.set('tab', 'manage');
+    window.location.href = url.toString();
   }
 
-  // Render pagination functions (similar to your existing ones but using the new AJAX functions)
-  function renderReviewPagination(data) {
-      const container = document.getElementById('review-pagination');
-      if (!container || data.total_pages <= 1) {
-          container.innerHTML = '';
-          return;
+  // Update select all checkbox
+  function updateSelectAllCheckbox() {
+    const checkboxes = document.querySelectorAll('.question-checkbox');
+    const selectAll = document.getElementById('select-all-review');
+    const selectAllTable = document.getElementById('select-all-table');
+    
+    if (checkboxes.length > 0) {
+      const visibleCheckboxes = Array.from(checkboxes).filter(checkbox => 
+        isQuestionVisible(checkbox.closest('.question-row'))
+      );
+      const allChecked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(checkbox => checkbox.checked);
+      const someChecked = visibleCheckboxes.some(checkbox => checkbox.checked);
+      
+      if (selectAll) {
+        selectAll.checked = allChecked;
+        selectAll.indeterminate = someChecked && !allChecked;
       }
+      if (selectAllTable) {
+        selectAllTable.checked = allChecked;
+        selectAllTable.indeterminate = someChecked && !allChecked;
+      }
+    }
+  }
 
-      container.innerHTML = createPaginationHTML('review', data);
+  function updateSelectAllCheckboxBank() {
+    const checkboxes = document.querySelectorAll('.question-checkbox-bank');
+    const selectAllBank = document.getElementById('select-all-checkbox-bank');
+    
+    if (checkboxes.length > 0 && selectAllBank) {
+      const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
+      const someChecked = Array.from(checkboxes).some(checkbox => checkbox.checked);
 
-      // Add event listeners for pagination
-      container.querySelectorAll('button').forEach(button => {
-          if (button.onclick) return; // Skip if already has onclick
+      selectAllBank.checked = allChecked;
+      selectAllBank.indeterminate = someChecked && !allChecked;
+    }
+  }
 
-          const page = button.getAttribute('data-page');
-          if (page) {
-              button.addEventListener('click', () => goToPageReview(parseInt(page)));
-          }
+  // Update bulk action buttons
+  function updateBulkActionButtons() {
+    const hasSelected = selectedQuestions.size > 0;
+    const bulkApproveBtn = document.getElementById('bulk-approve-btn');
+    const bulkRejectBtn = document.getElementById('bulk-reject-btn');
+    
+    if (bulkApproveBtn) bulkApproveBtn.disabled = !hasSelected;
+    if (bulkRejectBtn) bulkRejectBtn.disabled = !hasSelected;
+  }
+
+  function updateBulkActionButtonsBank() {
+    const hasSelected = selectedBankQuestions.size > 0;
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn-bank');
+    
+    if (bulkDeleteBtn) bulkDeleteBtn.disabled = !hasSelected;
+  }
+
+  function bulkApprove() {
+    const questionIds = Array.from(selectedQuestions);
+    if (questionIds.length === 0) return;
+
+    if (confirm(`Are you sure you want to approve ${questionIds.length} question(s)?`)) {
+      showLoading();
+      
+      fetch('/admin/questions/api/review/bulk-approve', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ question_ids: questionIds })
+      })
+      .then(response => response.json())
+      .then(data => {
+        hideLoading();
+        if (data.success) {
+          showToast('Success', data.message, 'success');
+          // Remove all selected questions from DOM
+          questionIds.forEach(id => removeQuestionRow(id));
+          selectedQuestions.clear();
+          updateBulkActionButtons();
+        } else {
+          showToast('Error', data.error || 'Failed to approve questions', 'error');
+        }
+      })
+      .catch(error => {
+        hideLoading();
+        console.error('Error bulk approving:', error);
+        showToast('Error', 'Failed to approve questions: ' + error.message, 'error');
       });
-
-      // Add event listener for per page selector
-      const perPageSelect = container.querySelector('#per-page-select-review');
-      if (perPageSelect) {
-          perPageSelect.addEventListener('change', (e) => changePerPageReview(e.target.value));
-      }
+    }
   }
 
-  function renderBankPagination(data) {
-      const container = document.getElementById('bank-pagination');
-      if (!container || data.total_pages <= 1) {
-          container.innerHTML = '';
-          return;
-      }
+  function bulkReject() {
+    const questionIds = Array.from(selectedQuestions);
+    if (questionIds.length === 0) return;
 
-      container.innerHTML = createPaginationHTML('bank', data);
+    if (confirm(`Are you sure you want to reject ${questionIds.length} question(s)?`)) {
+      showLoading();
 
-      // Add event listeners for pagination
-      container.querySelectorAll('button').forEach(button => {
-          if (button.onclick) return; // Skip if already has onclick
-
-          const page = button.getAttribute('data-page');
-          if (page) {
-              button.addEventListener('click', () => goToPageBank(parseInt(page)));
-          }
+      fetch('/admin/questions/api/review/bulk-reject', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ question_ids: questionIds })
+      })
+      .then(response => response.json())
+      .then(data => {
+        hideLoading();
+        if (data.success) {
+          showToast('Success', data.message, 'success');
+          // Remove all selected questions from DOM
+          questionIds.forEach(id => removeQuestionRow(id));
+          selectedQuestions.clear();
+          updateBulkActionButtons();
+        } else {
+          showToast('Error', data.error || 'Failed to reject questions', 'error');
+        }
+      })
+      .catch(error => {
+        hideLoading();
+        console.error('Error bulk rejecting:', error);
+        showToast('Error', 'Failed to reject questions: ' + error.message, 'error');
       });
-
-      // Add event listener for per page selector
-      const perPageSelect = container.querySelector('#per-page-select-bank');
-      if (perPageSelect) {
-          perPageSelect.addEventListener('change', (e) => changePerPageBank(e.target.value));
-      }
+    }
   }
 
-  // Helper function to create pagination HTML
-  function createPaginationHTML(type, data) {
-      const currentPage = type === 'review' ? currentState.review.currentPage : currentState.bank.currentPage;
-      const totalPages = data.total_pages;
-      const totalCount = data.total_count;
-      const pageSize = type === 'review' ? currentState.review.pageSize : currentState.bank.pageSize;
+  function bulkDeleteBankQuestions() {
+    const questionIds = Array.from(selectedBankQuestions);
+    if (questionIds.length === 0) return;
 
-      let html = `
-          <div class="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
-              <!-- Page Info -->
-              <div class="text-xs md:text-sm text-gray-600 pagination-info text-center md:text-left">
-                  Showing ${((currentPage - 1) * pageSize) + 1} to
-                  ${Math.min(currentPage * pageSize, totalCount)} of
-                  ${totalCount} entries
-              </div>
+    if (confirm(`Are you sure you want to delete ${questionIds.length} question(s)? This action cannot be undone.`)) {
+      showLoading();
 
-              <!-- Page Size Selector -->
-              <div class="flex items-center space-x-2">
-                  <span class="text-xs md:text-sm text-gray-600 hidden sm:inline">Show:</span>
-                  <select id="per-page-select-${type}" class="form-select input-focus p-1 border border-gray-300 rounded text-xs md:text-sm">
-                      <option value="5" ${pageSize == 5 ? 'selected' : ''}>5</option>
-                      <option value="10" ${pageSize == 10 ? 'selected' : ''}>10</option>
-                      <option value="25" ${pageSize == 25 ? 'selected' : ''}>25</option>
-                      <option value="50" ${pageSize == 50 ? 'selected' : ''}>50</option>
-                      <option value="100" ${pageSize == 100 ? 'selected' : ''}>100</option>
-                  </select>
-                  <span class="text-xs md:text-sm text-gray-600 hidden sm:inline">per page</span>
-              </div>
+      fetch('/admin/questions/api/bank/bulk-delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ question_ids: questionIds })
+      })
+      .then(response => response.json())
+      .then(data => {
+        hideLoading();
+        if (data.success) {
+          showToast('Success', data.message, 'success');
+          // Remove all selected questions from DOM
+          questionIds.forEach(id => removeBankQuestionRow(id));
+          selectedBankQuestions.clear();
+          updateBulkActionButtonsBank();
+        } else {
+          showToast('Error', data.error || 'Failed to delete questions', 'error');
+        }
+      })
+      .catch(error => {
+        hideLoading();
+        console.error('Error bulk deleting:', error);
+        showToast('Error', 'Failed to delete questions: ' + error.message, 'error');
+      });
+    }
+  }
 
-              <!-- Pagination Controls -->
-              <div class="flex items-center space-x-1">
-                  <!-- First Page -->
-                  <button data-page="1"
-                          class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn ${currentPage == 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700'}"
-                          ${currentPage == 1 ? 'disabled' : ''}
-                          title="First Page">
-                      <i class="fas fa-angle-double-left"></i>
-                  </button>
+  function deleteQuestion(questionId) {
+    if (confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
+      showLoading();
 
-                  <!-- Previous Page -->
-                  <button data-page="${currentPage - 1}"
-                          class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn ${currentPage == 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700'}"
-                          ${currentPage == 1 ? 'disabled' : ''}
-                          title="Previous Page">
-                      <i class="fas fa-angle-left"></i>
-                  </button>
-      `;
-
-      // Page Numbers
-      const startPage = Math.max(currentPage - 2, 1);
-      const endPage = Math.min(currentPage + 2, totalPages);
-
-      for (let p = startPage; p <= endPage; p++) {
-          if (p == currentPage) {
-              html += `<button class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-blue-500 bg-blue-500 text-white rounded pagination-btn">${p}</button>`;
+      fetch(`/admin/questions/api/questions/delete/${questionId}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+      }).then(response => response.json())
+        .then(data => {
+          hideLoading();
+          if (data.success) {
+            showToast('Success', 'Question deleted successfully', 'success');
+            // Remove the question row from DOM instead of reloading
+            removeBankQuestionRow(questionId);
           } else {
-              html += `<button data-page="${p}" class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 bg-white text-gray-700 rounded pagination-btn">${p}</button>`;
+            showToast('Error', data.error || 'Failed to delete question', 'error');
           }
-      }
-
-      html += `
-                  <!-- Next Page -->
-                  <button data-page="${currentPage + 1}"
-                          class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn ${currentPage == totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700'}"
-                          ${currentPage == totalPages ? 'disabled' : ''}
-                          title="Next Page">
-                      <i class="fas fa-angle-right"></i>
-                  </button>
-
-                  <!-- Last Page -->
-                  <button data-page="${totalPages}"
-                          class="px-2 py-1 md:px-3 md:py-1 text-xs md:text-sm border border-gray-300 rounded pagination-btn ${currentPage == totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700'}"
-                          ${currentPage == totalPages ? 'disabled' : ''}
-                          title="Last Page">
-                      <i class="fas fa-angle-double-right"></i>
-                  </button>
-              </div>
-          </div>
-      `;
-
-      return html;
+        }).catch(error => {
+          hideLoading();
+          console.error('Error deleting question:', error);
+          showToast('Error', 'Error deleting question: ' + error.message, 'error');
+        });
+    }
   }
 
-  // Keep all your existing utility functions (showToast, hideToast, showLoading, hideLoading, etc.)
-  // ... [Your existing utility functions]
-</script>
+  // ========== DOM MANIPULATION FUNCTIONS ==========
 
-<!-- Include all your existing JavaScript functions here -->
-<script>
+  // Remove question row from review table
+  function removeQuestionRow(questionId) {
+    const questionRow = document.querySelector(`[data-question-id="${questionId}"]`);
+    const feedbackRow = document.getElementById(`ai-feedback-${questionId}`);
+    
+    if (questionRow) {
+      questionRow.remove();
+    }
+    if (feedbackRow) {
+      feedbackRow.remove();
+    }
+    
+    // Update counts and UI
+    updateQuestionCounts();
+  }
+
+  // Remove question row from bank table
+  function removeBankQuestionRow(questionId) {
+    const questionRow = document.querySelector(`.question-checkbox-bank[data-question-id="${questionId}"]`)?.closest('tr');
+    if (questionRow) {
+      questionRow.remove();
+    }
+    
+    // Update counts
+    updateBankQuestionCounts();
+  }
+
+  // Update question counts after actions
+  function updateQuestionCounts() {
+    const remainingQuestions = document.querySelectorAll('.question-row').length;
+    const countBadge = document.getElementById('pending-count-badge');
+    if (countBadge) {
+      countBadge.textContent = `${remainingQuestions} questions pending review`;
+    }
+    
+    // If no questions left, show empty state
+    if (remainingQuestions === 0) {
+      showEmptyState();
+    }
+  }
+
+  function updateBankQuestionCounts() {
+    const remainingQuestions = document.querySelectorAll('.question-checkbox-bank').length;
+    const countBadge = document.querySelector('.bg-green-100');
+    if (countBadge) {
+      countBadge.textContent = `${remainingQuestions} questions in bank`;
+    }
+  }
+
+  function showEmptyState() {
+    const tbody = document.getElementById('questions-tbody');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-8">
+            <i class="fas fa-check-circle text-green-400 text-3xl md:text-4xl mb-4"></i>
+            <p class="text-gray-500 text-sm md:text-base">No questions pending review</p>
+            <p class="text-xs md:text-sm text-gray-400 mt-2">All questions have been reviewed and processed.</p>
+          </td>
+        </tr>
+      `;
+    }
+  }
+
+  function updateQuestionRowInDOM(questionId, text, options, correctAnswer) {
+    const questionRow = document.querySelector(`[data-question-id="${questionId}"]`);
+    if (questionRow) {
+      // Update question text
+      const questionTextCell = questionRow.querySelector('.truncate');
+      if (questionTextCell) {
+        questionTextCell.textContent = text.length > 100 ? text.substring(0, 100) + '...' : text;
+        questionTextCell.title = text;
+      }
+      
+      // Update options (if visible)
+      const optionsCell = questionRow.querySelector('.truncate[max-w-\\[150px\\]]');
+      if (optionsCell) {
+        const optionsText = options.join(', ');
+        optionsCell.textContent = optionsText.length > 50 ? optionsText.substring(0, 50) + '...' : optionsText;
+        optionsCell.title = optionsText;
+      }
+      
+      // Update correct answer (if visible)
+      const correctAnswerCell = questionRow.querySelector('.truncate[max-w-\\[120px\\]]');
+      if (correctAnswerCell) {
+        correctAnswerCell.textContent = correctAnswer.length > 30 ? correctAnswer.substring(0, 30) + '...' : correctAnswer;
+        correctAnswerCell.title = correctAnswer;
+      }
+    }
+  }
+
+  // ========== FILE UPLOAD FUNCTIONS ==========
+
   // File upload handler
   async function handleFileUpload() {
     const jsonFile = document.getElementById("json-file").files[0];
@@ -1396,16 +2516,15 @@ System{% endblock %} {% block extra_head %}
         // Clear file inputs
         document.getElementById("json-file").value = "";
         document.getElementById("csv-file").value = "";
-        document.getElementById("json-file-name").textContent =
-          "No file chosen";
+        document.getElementById("json-file-name").textContent = "No file chosen";
         document.getElementById("csv-file-name").textContent = "No file chosen";
-        // Reload review tab to show new questions
-        loadReviewTab();
+        // Switch to review tab to show new questions
+        document.querySelector('[data-tab="review"]').click();
       } else {
         showToast("Error", data.error || "Upload failed", "error");
       }
     } catch (error) {
-      showToast("Error", "Upload failed: " + error.message, "error");
+      showToast("Error", "Upload failed: ' + error.message", "error");
     } finally {
       hideLoading();
     }
@@ -1444,450 +2563,24 @@ System{% endblock %} {% block extra_head %}
         showToast("Success", data.message, "success");
         // Reset form
         document.getElementById("manual-question-form").reset();
-        // Reload review tab to show new question
-        loadReviewTab();
+        // Switch to review tab to show new question
+        document.querySelector('[data-tab="review"]').click();
       } else {
         showToast("Error", data.error || "Failed to add question", "error");
       }
     } catch (error) {
-      showToast("Error", "Failed to add question: " + error.message, "error");
+      showToast("Error", "Failed to add question: ' + error.message", "error");
     } finally {
       hideLoading();
     }
   }
 
-  // Edit question functionality
-  function editQuestion(
-    questionId,
-    text,
-    options,
-    correctAnswer,
-    difficulty = "intermediate",
-    tags = "",
-    questionType = "review"
-  ) {
-    document.getElementById("edit-question_id").value = questionId;
-    document.getElementById("edit-text").value = text;
-    document.getElementById("edit-question-type").value = questionType;
+  // ========== UTILITY FUNCTIONS ==========
 
-    // Fill options
-    for (let i = 0; i < 4; i++) {
-      document.getElementById(`edit-option-${i + 1}`).value = options[i] || "";
-    }
-
-    // Set correct answer (find which option matches)
-    let correctAnswerIndex = -1;
-    for (let i = 0; i < options.length; i++) {
-      if (options[i] === correctAnswer) {
-        correctAnswerIndex = i + 1;
-        break;
-      }
-    }
-    document.getElementById("edit-correct-answer").value = correctAnswerIndex;
-
-    // Show/hide additional fields based on question type
-    const difficultySection = document.getElementById(
-      "edit-difficulty-section"
-    );
-    const tagsSection = document.getElementById("edit-tags-section");
-
-    if (questionType === "bank") {
-      difficultySection.style.display = "block";
-      tagsSection.style.display = "block";
-      document.getElementById("edit-difficulty").value = difficulty;
-      document.getElementById("edit-tags").value = tags;
-    } else {
-      difficultySection.style.display = "none";
-      tagsSection.style.display = "none";
-    }
-
-    // Show modal
-    const modal = document.getElementById("edit-modal");
-    modal.classList.remove("hidden");
-  }
-
-  async function submitEdit() {
-    const questionId = document.getElementById("edit-question_id").value;
-    const questionType = document.getElementById("edit-question-type").value;
-    const text = document.getElementById("edit-text").value;
-    const options = [
-      document.getElementById("edit-option-1").value,
-      document.getElementById("edit-option-2").value,
-      document.getElementById("edit-option-3").value,
-      document.getElementById("edit-option-4").value,
-    ];
-    const correctAnswerIndex = document.getElementById(
-      "edit-correct-answer"
-    ).value;
-    const correctAnswer = options[parseInt(correctAnswerIndex) - 1];
-
-    // Validation
-    if (!text || !options.every((opt) => opt) || !correctAnswer) {
-      showToast("Error", "All fields are required", "error");
-      return;
-    }
-
-    showLoading();
-
-    const endpoint =
-      questionType === "bank"
-        ? "/admin/questions/api/bank/update"
-        : "/admin/questions/api/review/update";
-
-    const requestData = {
-      question_id: questionId,
-      action: "update",
-      text: text,
-      options: options,
-      correct_answer: correctAnswer,
-    };
-
-    // Add additional fields for bank questions
-    if (questionType === "bank") {
-      requestData.difficulty = document.getElementById("edit-difficulty").value;
-      const tagsInput = document.getElementById("edit-tags").value;
-      requestData.tags = tagsInput
-        ? tagsInput
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter((tag) => tag)
-        : [];
-    }
-
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestData),
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        showToast("Success", "Question updated successfully", "success");
-        closeModal();
-        // Reload the appropriate tab
-        if (questionType === "review") {
-          loadReviewTab();
-        } else {
-          loadBankTab();
-        }
-      } else {
-        showToast("Error", data.error || "Failed to update question", "error");
-      }
-    } catch (error) {
-      showToast("Error", "Error updating question: " + error.message, "error");
-    } finally {
-      hideLoading();
-    }
-  }
-
+  // Close modal
   function closeModal() {
-    const modal = document.getElementById("edit-modal");
-    modal.classList.add("hidden");
-  }
-
-  // Individual question actions
-  async function approveQuestion(questionId) {
-    if (confirm("Are you sure you want to approve this question?")) {
-      showLoading();
-      try {
-        const response = await fetch(
-          `/admin/questions/api/questions/approve/${questionId}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-        const data = await response.json();
-
-        if (data.success) {
-          showToast("Success", "Question approved successfully", "success");
-          // Reload both tabs to reflect changes
-          loadReviewTab();
-          loadBankTab();
-        } else {
-          showToast(
-            "Error",
-            data.error || "Failed to approve question",
-            "error"
-          );
-        }
-      } catch (error) {
-        showToast(
-          "Error",
-          "Error approving question: " + error.message,
-          "error"
-        );
-      } finally {
-        hideLoading();
-      }
-    }
-  }
-
-  async function rejectQuestion(questionId) {
-    if (confirm("Are you sure you want to reject this question?")) {
-      showLoading();
-      try {
-        const response = await fetch(
-          `/admin/questions/api/questions/reject/${questionId}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-        const data = await response.json();
-
-        if (data.success) {
-          showToast("Success", "Question rejected successfully", "success");
-          loadReviewTab();
-        } else {
-          showToast(
-            "Error",
-            data.error || "Failed to reject question",
-            "error"
-          );
-        }
-      } catch (error) {
-        showToast(
-          "Error",
-          "Error rejecting question: " + error.message,
-          "error"
-        );
-      } finally {
-        hideLoading();
-      }
-    }
-  }
-
-  async function deleteQuestion(questionId) {
-    if (
-      confirm(
-        "Are you sure you want to delete this question? This action cannot be undone."
-      )
-    ) {
-      showLoading();
-      try {
-        const response = await fetch(
-          `/admin/questions/api/questions/delete/${questionId}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          }
-        );
-        const data = await response.json();
-
-        if (data.success) {
-          showToast("Success", "Question deleted successfully", "success");
-          loadBankTab();
-        } else {
-          showToast(
-            "Error",
-            data.error || "Failed to delete question",
-            "error"
-          );
-        }
-      } catch (error) {
-        showToast(
-          "Error",
-          "Error deleting question: " + error.message,
-          "error"
-        );
-      } finally {
-        hideLoading();
-      }
-    }
-  }
-
-  // Bulk operations
-  async function bulkApproveQuestions() {
-    const questionIds = Array.from(currentState.review.selectedQuestions);
-    if (questionIds.length === 0) return;
-
-    if (
-      confirm(
-        `Are you sure you want to approve ${questionIds.length} question(s)?`
-      )
-    ) {
-      showLoading();
-      try {
-        const response = await fetch(
-          "/admin/questions/api/review/bulk-approve",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question_ids: questionIds }),
-          }
-        );
-        const data = await response.json();
-
-        if (data.success) {
-          showToast("Success", data.message, "success");
-          currentState.review.selectedQuestions.clear();
-          loadReviewTab();
-          loadBankTab();
-        } else {
-          showToast(
-            "Error",
-            data.error || "Failed to approve questions",
-            "error"
-          );
-        }
-      } catch (error) {
-        showToast(
-          "Error",
-          "Error approving questions: " + error.message,
-          "error"
-        );
-      } finally {
-        hideLoading();
-      }
-    }
-  }
-
-  async function bulkRejectQuestions() {
-    const questionIds = Array.from(currentState.review.selectedQuestions);
-    if (questionIds.length === 0) return;
-
-    if (
-      confirm(
-        `Are you sure you want to reject ${questionIds.length} question(s)? This action cannot be undone.`
-      )
-    ) {
-      showLoading();
-      try {
-        const response = await fetch(
-          "/admin/questions/api/review/bulk-reject",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question_ids: questionIds }),
-          }
-        );
-        const data = await response.json();
-
-        if (data.success) {
-          showToast("Success", data.message, "success");
-          currentState.review.selectedQuestions.clear();
-          loadReviewTab();
-        } else {
-          showToast(
-            "Error",
-            data.error || "Failed to reject questions",
-            "error"
-          );
-        }
-      } catch (error) {
-        showToast(
-          "Error",
-          "Error rejecting questions: " + error.message,
-          "error"
-        );
-      } finally {
-        hideLoading();
-      }
-    }
-  }
-
-  async function bulkDeleteQuestions() {
-    const questionIds = Array.from(currentState.bank.selectedQuestions);
-    if (questionIds.length === 0) return;
-
-    if (
-      confirm(
-        `Are you sure you want to delete ${questionIds.length} question(s)? This action cannot be undone.`
-      )
-    ) {
-      showLoading();
-      try {
-        const response = await fetch("/admin/questions/api/bank/bulk-delete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question_ids: questionIds }),
-        });
-        const data = await response.json();
-
-        if (data.success) {
-          showToast("Success", data.message, "success");
-          currentState.bank.selectedQuestions.clear();
-          loadBankTab();
-        } else {
-          showToast(
-            "Error",
-            data.error || "Failed to delete questions",
-            "error"
-          );
-        }
-      } catch (error) {
-        showToast(
-          "Error",
-          "Error deleting questions: " + error.message,
-          "error"
-        );
-      } finally {
-        hideLoading();
-      }
-    }
-  }
-
-  // Helper functions for bulk operations
-  function updateSelectAllCheckboxReview() {
-    const reviewCheckboxes = document.querySelectorAll(
-      ".question-checkbox-review"
-    );
-    const selectAllReview = document.getElementById(
-      "select-all-checkbox-review"
-    );
-
-    if (reviewCheckboxes.length > 0 && selectAllReview) {
-      const allChecked = Array.from(reviewCheckboxes).every(
-        (checkbox) => checkbox.checked
-      );
-      const someChecked = Array.from(reviewCheckboxes).some(
-        (checkbox) => checkbox.checked
-      );
-
-      selectAllReview.checked = allChecked;
-      selectAllReview.indeterminate = someChecked && !allChecked;
-    }
-  }
-
-  function updateBulkActionButtonsReview() {
-    const hasSelected = currentState.review.selectedQuestions.size > 0;
-    const bulkApproveBtn = document.getElementById("bulk-approve-btn-review");
-    const bulkRejectBtn = document.getElementById("bulk-reject-btn-review");
-
-    if (bulkApproveBtn) {
-      bulkApproveBtn.disabled = !hasSelected;
-    }
-    if (bulkRejectBtn) {
-      bulkRejectBtn.disabled = !hasSelected;
-    }
-  }
-
-  function updateSelectAllCheckboxBank() {
-    const bankCheckboxes = document.querySelectorAll(".question-checkbox-bank");
-    const selectAllBank = document.getElementById("select-all-checkbox-bank");
-
-    if (bankCheckboxes.length > 0 && selectAllBank) {
-      const allChecked = Array.from(bankCheckboxes).every(
-        (checkbox) => checkbox.checked
-      );
-      const someChecked = Array.from(bankCheckboxes).some(
-        (checkbox) => checkbox.checked
-      );
-
-      selectAllBank.checked = allChecked;
-      selectAllBank.indeterminate = someChecked && !allChecked;
-    }
-  }
-
-  function updateBulkActionButtonsBank() {
-    const hasSelected = currentState.bank.selectedQuestions.size > 0;
-    const bulkDeleteBtn = document.getElementById("bulk-delete-btn-bank");
-
-    if (bulkDeleteBtn) {
-      bulkDeleteBtn.disabled = !hasSelected;
-    }
+    const modal = document.getElementById('edit-modal');
+    modal.classList.add('hidden');
   }
 
   // Toast notification functions
@@ -1902,33 +2595,13 @@ System{% endblock %} {% block extra_head %}
     }
 
     // Set border color based on type
-    toast.className = toast.className.replace(
-      /border-(red|green|yellow|blue)-500/,
-      ""
-    );
-    toast.classList.add(
-      `border-${
-        type === "success"
-          ? "green"
-          : type === "error"
-          ? "red"
-          : type === "warning"
-          ? "yellow"
-          : "blue"
-      }-500`
-    );
+    toast.className = toast.className.replace(/border-(red|green|yellow|blue)-500/, "");
+    toast.classList.add(`border-${type === "success" ? "green" : type === "error" ? "red" : type === "warning" ? "yellow" : "blue"}-500`);
 
     // Set icon based on type
     const iconElement = toast.querySelector(".flex-shrink-0 i");
     if (iconElement) {
-      iconElement.className =
-        type === "success"
-          ? "fas fa-check-circle text-green-500"
-          : type === "error"
-          ? "fas fa-exclamation-circle text-red-500"
-          : type === "warning"
-          ? "fas fa-exclamation-triangle text-yellow-500"
-          : "fas fa-info-circle text-blue-500";
+      iconElement.className = type === "success" ? "fas fa-check-circle text-green-500" : type === "error" ? "fas fa-exclamation-circle text-red-500" : type === "warning" ? "fas fa-exclamation-triangle text-yellow-500" : "fas fa-info-circle text-blue-500";
     }
 
     toastMessage.textContent = title;

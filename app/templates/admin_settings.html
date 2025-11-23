@@ -1,0 +1,769 @@
+{% extends "admin_base.html" %} {% block title %}Settings - DSVV Quiz System{%
+endblock %} {% block content %}
+<div class="p-4 md:p-6">
+  <div class="max-w-9xl mx-auto">
+    <!-- Header Section -->
+    <div
+      class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
+    >
+      <div class="flex items-center mb-4 md:mb-0">
+        <div class="bg-blue-100 p-3 rounded-xl mr-4">
+          <i class="fas fa-cog text-blue-600 text-2xl"></i>
+        </div>
+        <div>
+          <h1
+            class="text-2xl lg:text-3xl font-bold text-gray-800 dark:text-white"
+          >
+            System Settings
+          </h1>
+          <p class="text-gray-600 dark:text-gray-300 text-sm mt-1">
+            Configure system settings, API keys, and application preferences
+          </p>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <button
+        id="save-settings"
+        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center"
+      >
+        <i class="fas fa-save mr-2"></i>
+        Save All Changes
+      </button>
+    </div>
+
+    <!-- Settings Tabs -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md mb-6">
+      <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="flex space-x-8 px-6">
+          <button
+            data-tab="ai-settings"
+            class="tab-button py-4 px-1 border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 font-medium text-sm"
+          >
+            <i class="fas fa-robot mr-2"></i>
+            AI Settings
+          </button>
+          <button
+            data-tab="general-settings"
+            class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium text-sm"
+          >
+            <i class="fas fa-sliders-h mr-2"></i>
+            General
+          </button>
+          <button
+            data-tab="quiz-settings"
+            class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium text-sm"
+          >
+            <i class="fas fa-rocket mr-2"></i>
+            Quiz Settings
+          </button>
+          <button
+            data-tab="security-settings"
+            class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 font-medium text-sm"
+          >
+            <i class="fas fa-shield-alt mr-2"></i>
+            Security
+          </button>
+        </nav>
+      </div>
+
+      <!-- AI Settings Tab -->
+      <div id="ai-settings" class="tab-content p-6">
+        <h2
+          class="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center"
+        >
+          <i class="fas fa-robot text-purple-600 mr-3"></i>
+          AI Review Configuration
+        </h2>
+
+        <div class="space-y-6">
+          <!-- API Key Status -->
+          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-medium text-gray-800 dark:text-white">
+                Gemini API Status
+              </h3>
+              {% if ai_enabled %}
+              <span
+                class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium"
+              >
+                <i class="fas fa-check-circle mr-1"></i>Active
+              </span>
+              {% else %}
+              <span
+                class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full text-sm font-medium"
+              >
+                <i class="fas fa-exclamation-triangle mr-1"></i>Not Configured
+              </span>
+              {% endif %}
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  API Key Configuration
+                </label>
+                <div class="flex space-x-3">
+                  <input
+                    type="password"
+                    id="gemini-api-key"
+                    placeholder="Enter your Gemini API key"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:text-white"
+                    value="{{ api_key_placeholder if ai_enabled else '' }}"
+                  />
+                  <button
+                    id="test-api-key"
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+                  >
+                    <i class="fas fa-test mr-2"></i>
+                    Test
+                  </button>
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  Your API key is stored securely and never exposed to clients
+                </p>
+              </div>
+
+              <!-- Configuration Instructions -->
+              <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h4
+                  class="font-medium text-blue-800 dark:text-blue-300 mb-2 flex items-center"
+                >
+                  <i class="fas fa-info-circle mr-2"></i>
+                  Setup Instructions
+                </h4>
+                <p class="text-sm text-blue-700 dark:text-blue-400 mb-2">
+                  To enable AI question review, add your Gemini API key:
+                </p>
+                <div
+                  class="bg-gray-800 text-green-400 p-3 rounded text-sm overflow-x-auto mb-2"
+                >
+                  GEMINI_API_KEY=your_actual_gemini_api_key_here
+                </div>
+                <p class="text-sm text-blue-700 dark:text-blue-400">
+                  Get your API key from:
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    class="underline hover:text-blue-900 dark:hover:text-blue-200"
+                  >
+                    Google AI Studio
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Features Configuration -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div
+              class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4"
+            >
+              <h4 class="font-medium text-gray-800 dark:text-white mb-3">
+                AI Review Features
+              </h4>
+              <div class="space-y-3">
+                <label class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="enable-ai-review"
+                    class="rounded text-blue-600 mr-3"
+                    {%
+                    if
+                    ai_enabled
+                    %}checked{%
+                    endif
+                    %}
+                  />
+                  <span class="text-sm text-gray-700 dark:text-gray-300"
+                    >Enable AI Question Review</span
+                  >
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="enable-auto-suggestions"
+                    class="rounded text-blue-600 mr-3"
+                    checked
+                  />
+                  <span class="text-sm text-gray-700 dark:text-gray-300"
+                    >Automatic Question Improvements</span
+                  >
+                </label>
+                <label class="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="enable-quality-scoring"
+                    class="rounded text-blue-600 mr-3"
+                    checked
+                  />
+                  <span class="text-sm text-gray-700 dark:text-gray-300"
+                    >Quality Scoring</span
+                  >
+                </label>
+              </div>
+            </div>
+
+            <div
+              class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4"
+            >
+              <h4 class="font-medium text-gray-800 dark:text-white mb-3">
+                Review Settings
+              </h4>
+              <div class="space-y-3">
+                <div>
+                  <label
+                    class="block text-sm text-gray-700 dark:text-gray-300 mb-1"
+                    >Confidence Threshold</label
+                  >
+                  <input
+                    type="range"
+                    id="confidence-threshold"
+                    min="0.5"
+                    max="1"
+                    step="0.05"
+                    value="0.7"
+                    class="w-full"
+                  />
+                  <div
+                    class="text-xs text-gray-500 dark:text-gray-400 text-right"
+                  >
+                    0.7
+                  </div>
+                </div>
+                <div>
+                  <label
+                    class="block text-sm text-gray-700 dark:text-gray-300 mb-1"
+                    >Max Suggestions</label
+                  >
+                  <select
+                    id="max-suggestions"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-600 dark:text-white"
+                  >
+                    <option value="3">3 Suggestions</option>
+                    <option value="5" selected>5 Suggestions</option>
+                    <option value="10">10 Suggestions</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- General Settings Tab -->
+      <div id="general-settings" class="tab-content p-6 hidden">
+        <h2
+          class="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center"
+        >
+          <i class="fas fa-sliders-h text-blue-600 mr-3"></i>
+          General Application Settings
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Display Settings -->
+          <div
+            class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6"
+          >
+            <h4 class="font-medium text-gray-800 dark:text-white mb-4">
+              Display Settings
+            </h4>
+            <div class="space-y-4">
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Default Theme
+                </label>
+                <select
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-600 dark:text-white"
+                >
+                  <option value="light">Light Mode</option>
+                  <option value="dark">Dark Mode</option>
+                  <option value="auto">Auto (System Preference)</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Items Per Page
+                </label>
+                <select
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-600 dark:text-white"
+                >
+                  <option value="10">10 items</option>
+                  <option value="25" selected>25 items</option>
+                  <option value="50">50 items</option>
+                  <option value="100">100 items</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notification Settings -->
+          <div
+            class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6"
+          >
+            <h4 class="font-medium text-gray-800 dark:text-white mb-4">
+              Notification Settings
+            </h4>
+            <div class="space-y-3">
+              <label class="flex items-center justify-between">
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Email Notifications</span
+                >
+                <input type="checkbox" class="rounded text-blue-600" checked />
+              </label>
+              <label class="flex items-center justify-between">
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Push Notifications</span
+                >
+                <input type="checkbox" class="rounded text-blue-600" checked />
+              </label>
+              <label class="flex items-center justify-between">
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >New User Registrations</span
+                >
+                <input type="checkbox" class="rounded text-blue-600" checked />
+              </label>
+              <label class="flex items-center justify-between">
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Quiz Submissions</span
+                >
+                <input type="checkbox" class="rounded text-blue-600" />
+              </label>
+            </div>
+          </div>
+
+          <!-- System Information -->
+          <div
+            class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6 md:col-span-2"
+          >
+            <h4 class="font-medium text-gray-800 dark:text-white mb-4">
+              System Information
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div
+                class="text-center p-4 bg-gray-50 dark:bg-gray-600 rounded-lg"
+              >
+                <div
+                  class="text-2xl font-bold text-blue-600 dark:text-blue-400"
+                >
+                  {{ total_questions }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-300">
+                  Total Questions
+                </div>
+              </div>
+              <div
+                class="text-center p-4 bg-gray-50 dark:bg-gray-600 rounded-lg"
+              >
+                <div
+                  class="text-2xl font-bold text-green-600 dark:text-green-400"
+                >
+                  {{ total_quizzes }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-300">
+                  Active Quizzes
+                </div>
+              </div>
+              <div
+                class="text-center p-4 bg-gray-50 dark:bg-gray-600 rounded-lg"
+              >
+                <div
+                  class="text-2xl font-bold text-purple-600 dark:text-purple-400"
+                >
+                  {{ total_users }}
+                </div>
+                <div class="text-sm text-gray-600 dark:text-gray-300">
+                  Registered Users
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quiz Settings Tab -->
+      <div id="quiz-settings" class="tab-content p-6 hidden">
+        <h2
+          class="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center"
+        >
+          <i class="fas fa-rocket text-green-600 mr-3"></i>
+          Quiz Configuration
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Quiz Behavior -->
+          <div
+            class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6"
+          >
+            <h4 class="font-medium text-gray-800 dark:text-white mb-4">
+              Quiz Behavior
+            </h4>
+            <div class="space-y-4">
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Default Time Limit (minutes)
+                </label>
+                <input
+                  type="number"
+                  value="30"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-600 dark:text-white"
+                />
+              </div>
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Passing Score (%)
+                </label>
+                <input
+                  type="number"
+                  value="60"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-600 dark:text-white"
+                />
+              </div>
+              <label class="flex items-center">
+                <input
+                  type="checkbox"
+                  class="rounded text-blue-600 mr-3"
+                  checked
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Allow retakes</span
+                >
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="rounded text-blue-600 mr-3" />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Shuffle questions</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <!-- Security Settings -->
+          <div
+            class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6"
+          >
+            <h4 class="font-medium text-gray-800 dark:text-white mb-4">
+              Security & Access
+            </h4>
+            <div class="space-y-4">
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Max Attempts
+                </label>
+                <input
+                  type="number"
+                  value="3"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-600 dark:text-white"
+                />
+              </div>
+              <label class="flex items-center">
+                <input
+                  type="checkbox"
+                  class="rounded text-blue-600 mr-3"
+                  checked
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Require full screen</span
+                >
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="rounded text-blue-600 mr-3" />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Disable copy/paste</span
+                >
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="rounded text-blue-600 mr-3" />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Monitor tab switching</span
+                >
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Settings Tab -->
+      <div id="security-settings" class="tab-content p-6 hidden">
+        <h2
+          class="text-xl font-semibold text-gray-800 dark:text-white mb-6 flex items-center"
+        >
+          <i class="fas fa-shield-alt text-red-600 mr-3"></i>
+          Security Settings
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Authentication -->
+          <div
+            class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6"
+          >
+            <h4 class="font-medium text-gray-800 dark:text-white mb-4">
+              Authentication
+            </h4>
+            <div class="space-y-4">
+              <div>
+                <label
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
+                  Session Timeout (minutes)
+                </label>
+                <input
+                  type="number"
+                  value="120"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-600 dark:text-white"
+                />
+              </div>
+              <label class="flex items-center">
+                <input
+                  type="checkbox"
+                  class="rounded text-blue-600 mr-3"
+                  checked
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Require strong passwords</span
+                >
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="rounded text-blue-600 mr-3" />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Enable two-factor authentication</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <!-- Data Protection -->
+          <div
+            class="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-6"
+          >
+            <h4 class="font-medium text-gray-800 dark:text-white mb-4">
+              Data Protection
+            </h4>
+            <div class="space-y-4">
+              <label class="flex items-center">
+                <input
+                  type="checkbox"
+                  class="rounded text-blue-600 mr-3"
+                  checked
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Encrypt sensitive data</span
+                >
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="rounded text-blue-600 mr-3" />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Automatic backup</span
+                >
+              </label>
+              <label class="flex items-center">
+                <input
+                  type="checkbox"
+                  class="rounded text-blue-600 mr-3"
+                  checked
+                />
+                <span class="text-sm text-gray-700 dark:text-gray-300"
+                  >Log all admin activities</span
+                >
+              </label>
+            </div>
+          </div>
+
+          <!-- Danger Zone -->
+          <div
+            class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 md:col-span-2"
+          >
+            <h4
+              class="font-medium text-red-800 dark:text-red-300 mb-4 flex items-center"
+            >
+              <i class="fas fa-exclamation-triangle mr-2"></i>
+              Danger Zone
+            </h4>
+            <div class="space-y-3">
+              <p class="text-sm text-red-700 dark:text-red-400">
+                These actions are irreversible. Please be cautious.
+              </p>
+              <div class="flex space-x-3">
+                <button
+                  class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                >
+                  Clear All Data
+                </button>
+                <button
+                  class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                >
+                  Reset System
+                </button>
+                <button
+                  class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200"
+                >
+                  Export All Data
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Tab functionality
+    const tabButtons = document.querySelectorAll(".tab-button");
+    const tabContents = document.querySelectorAll(".tab-content");
+
+    tabButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const tabId = button.getAttribute("data-tab");
+
+        // Update active tab button
+        tabButtons.forEach((btn) => {
+          btn.classList.remove(
+            "border-blue-500",
+            "text-blue-600",
+            "dark:text-blue-400"
+          );
+          btn.classList.add(
+            "border-transparent",
+            "text-gray-500",
+            "dark:text-gray-400"
+          );
+        });
+        button.classList.add(
+          "border-blue-500",
+          "text-blue-600",
+          "dark:text-blue-400"
+        );
+        button.classList.remove(
+          "border-transparent",
+          "text-gray-500",
+          "dark:text-gray-400"
+        );
+
+        // Show active tab content
+        tabContents.forEach((content) => {
+          content.classList.add("hidden");
+        });
+        document.getElementById(tabId).classList.remove("hidden");
+      });
+    });
+
+    // API Key Test functionality
+    document
+      .getElementById("test-api-key")
+      .addEventListener("click", function () {
+        const apiKey = document.getElementById("gemini-api-key").value;
+        const testButton = this;
+        const originalText = testButton.innerHTML;
+
+        if (!apiKey) {
+          showNotification("Please enter an API key", "error");
+          return;
+        }
+
+        testButton.innerHTML =
+          '<i class="fas fa-spinner fa-spin mr-2"></i>Testing...';
+        testButton.disabled = true;
+
+        // Simulate API test (replace with actual API call)
+        setTimeout(() => {
+          testButton.innerHTML =
+            '<i class="fas fa-check mr-2"></i>Test Successful';
+          testButton.classList.remove("bg-green-600");
+          testButton.classList.add("bg-green-500");
+          showNotification("API key is valid and working", "success");
+
+          setTimeout(() => {
+            testButton.innerHTML = originalText;
+            testButton.classList.remove("bg-green-500");
+            testButton.classList.add("bg-green-600");
+            testButton.disabled = false;
+          }, 2000);
+        }, 1500);
+      });
+
+    // Save settings functionality
+    document
+      .getElementById("save-settings")
+      .addEventListener("click", function () {
+        const saveButton = this;
+        const originalText = saveButton.innerHTML;
+
+        saveButton.innerHTML =
+          '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+        saveButton.disabled = true;
+
+        // Simulate save operation
+        setTimeout(() => {
+          saveButton.innerHTML =
+            '<i class="fas fa-check mr-2"></i>Saved Successfully';
+          saveButton.classList.remove("bg-blue-600");
+          saveButton.classList.add("bg-green-500");
+          showNotification(
+            "All settings have been saved successfully",
+            "success"
+          );
+
+          setTimeout(() => {
+            saveButton.innerHTML = originalText;
+            saveButton.classList.remove("bg-green-500");
+            saveButton.classList.add("bg-blue-600");
+            saveButton.disabled = false;
+          }, 2000);
+        }, 1000);
+      });
+
+    // Confidence threshold slider
+    const confidenceSlider = document.getElementById("confidence-threshold");
+    const confidenceValue = confidenceSlider.nextElementSibling;
+
+    confidenceSlider.addEventListener("input", function () {
+      confidenceValue.textContent = this.value;
+    });
+
+    // Show notification function
+    function showNotification(message, type = "info") {
+      const notification = document.createElement("div");
+      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg text-white ${
+        type === "success"
+          ? "bg-green-500"
+          : type === "error"
+          ? "bg-red-500"
+          : "bg-blue-500"
+      }`;
+      notification.innerHTML = `
+      <div class="flex items-center">
+        <i class="fas fa-${
+          type === "success"
+            ? "check"
+            : type === "error"
+            ? "exclamation-triangle"
+            : "info"
+        }-circle mr-2"></i>
+        <span>${message}</span>
+      </div>
+    `;
+
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+  });
+</script>
+{% endblock %}

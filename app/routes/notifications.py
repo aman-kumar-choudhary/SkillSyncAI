@@ -22,7 +22,7 @@ notifications_bp = Blueprint('notifications', __name__)
 
 # Student Notification Routes
 @notifications_bp.route('/api/notifications')
-@login_required(role='student')
+@login_required
 def get_student_notifications_route():
     """Get student notifications"""
     try:
@@ -46,7 +46,7 @@ def get_student_notifications_route():
         }), 500
 
 @notifications_bp.route('/api/notifications/read', methods=['POST'])
-@login_required(role='student')
+@login_required
 def mark_all_student_notifications_read_route():
     """Mark all student notifications as read"""
     try:
@@ -66,7 +66,7 @@ def mark_all_student_notifications_read_route():
         }), 500
 
 @notifications_bp.route('/api/notifications/<notification_id>/read', methods=['POST'])
-@login_required(role='student')
+@login_required
 def mark_single_student_notification_read_route(notification_id):
     """Mark a single student notification as read"""
     try:
@@ -92,7 +92,7 @@ def mark_single_student_notification_read_route(notification_id):
         }), 500
 
 @notifications_bp.route('/api/notifications/clear', methods=['POST'])
-@login_required(role='student')
+@login_required
 def clear_all_student_notifications_route():
     """Clear all student notifications"""
     try:
@@ -112,7 +112,7 @@ def clear_all_student_notifications_route():
         }), 500
 
 @notifications_bp.route('/api/notifications/<notification_id>', methods=['DELETE'])
-@login_required(role='student')
+@login_required
 def delete_single_student_notification_route(notification_id):
     """Delete a single student notification"""
     try:
@@ -139,7 +139,7 @@ def delete_single_student_notification_route(notification_id):
 
 # Admin Notification Routes
 @notifications_bp.route('/api/admin_notifications')
-@login_required(role='admin')
+@login_required
 def get_admin_notifications_route():
     """Get admin notifications"""
     try:
@@ -162,7 +162,7 @@ def get_admin_notifications_route():
         }), 500
 
 @notifications_bp.route('/api/admin_notifications/read', methods=['POST'])
-@login_required(role='admin')
+@login_required
 def mark_all_admin_notifications_read_route():
     """Mark all admin notifications as read"""
     try:
@@ -181,7 +181,7 @@ def mark_all_admin_notifications_read_route():
         }), 500
 
 @notifications_bp.route('/api/admin_notifications/<notification_id>/read', methods=['POST'])
-@login_required(role='admin')
+@login_required
 def mark_single_admin_notification_read_route(notification_id):
     """Mark a single admin notification as read"""
     try:
@@ -206,7 +206,7 @@ def mark_single_admin_notification_read_route(notification_id):
         }), 500
 
 @notifications_bp.route('/api/admin_notifications/clear', methods=['POST'])
-@login_required(role='admin')
+@login_required
 def clear_all_admin_notifications_route():
     """Clear all admin notifications"""
     try:
@@ -225,7 +225,7 @@ def clear_all_admin_notifications_route():
         }), 500
 
 @notifications_bp.route('/api/admin_notifications/<notification_id>', methods=['DELETE'])
-@login_required(role='admin')
+@login_required
 def delete_single_admin_notification_route(notification_id):
     """Delete a single admin notification"""
     try:
@@ -251,7 +251,7 @@ def delete_single_admin_notification_route(notification_id):
 
 # Utility routes for both student and admin
 @notifications_bp.route('/api/notifications/unread_count')
-@login_required()
+@login_required
 def get_unread_count():
     """Get unread notification count for current user"""
     try:

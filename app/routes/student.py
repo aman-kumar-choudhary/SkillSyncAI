@@ -8,15 +8,12 @@ from app.models.feedback_models import feedback_collection
 from datetime import datetime
 import random
 import uuid
+import time
 
 student_bp = Blueprint('student', __name__)
 
-
-
-
-
 @student_bp.route('/student_dashboard', methods=['GET', 'POST'])
-@login_required(role='student')
+@login_required
 def student_dashboard():
     """Student dashboard"""
     user = users_collection.find_one({'scholar_id': session['scholar_id']}, {'_id': 0})
@@ -85,7 +82,7 @@ def student_dashboard():
     return render_template('student_dashboard.html', user=user)
 
 @student_bp.route('/instructions')
-@login_required(role='student')
+@login_required
 def instructions():
     """Quiz instructions page"""
     user = users_collection.find_one({'scholar_id': session['scholar_id']}, {'_id': 0})
@@ -134,15 +131,20 @@ def instructions():
     return render_template('instructions.html', user=user)
 
 @student_bp.route('/quiz')
-@login_required(role='student')
+@login_required
 def quiz():
     """Quiz page for students"""
     if 'questions' not in session:
         return redirect(url_for('student.student_dashboard'))
-    return render_template('quiz.html')
+    
+    # Get quiz details to pass to template
+    quiz = quizzes_collection.find_one({'quiz_id': session.get('quiz_id')})
+    quiz_id = session.get('quiz_id', 'unknown')
+    
+    return render_template('quiz.html', quiz_id=quiz_id, quiz=quiz)
 
 @student_bp.route('/api/get_questions', methods=['GET'])
-@login_required(role='student')
+@login_required
 def get_questions():
     """Get questions for student quiz"""
     if 'questions' not in session:
@@ -150,7 +152,7 @@ def get_questions():
     return jsonify(session['questions'])
 
 @student_bp.route('/start_quiz', methods=['POST'])
-@login_required(role='student')
+@login_required
 def start_quiz():
     """Start quiz for student"""
     if 'course' not in session or 'semester' not in session:
@@ -207,6 +209,7 @@ def start_quiz():
         session['current_question'] = 0
         session['answers'] = {}
         session['quiz_start_time'] = datetime.now().isoformat()
+        session['quiz_id'] = active_quiz['quiz_id']  # Ensure quiz_id is set
         
         # Get duration from quiz document and handle both formats
         duration = active_quiz.get('duration', 600)
@@ -218,9 +221,13 @@ def start_quiz():
         
         session['quiz_duration'] = duration
         
-        print(f"Quiz started with {len(questions)} questions, duration: {duration} seconds ({duration//60} minutes)")
+        print(f"Quiz started with {len(questions)} questions, duration: {duration} seconds ({duration//60} minutes), quiz_id: {active_quiz['quiz_id']}")
         
-        return jsonify({"success": True, "redirect": url_for('student.quiz')})
+        return jsonify({
+            "success": True, 
+            "redirect": url_for('student.quiz'),
+            "quiz_id": active_quiz['quiz_id']
+        })
         
     except Exception as e:
         print(f"Error in start_quiz: {str(e)}")
@@ -229,7 +236,7 @@ def start_quiz():
         return jsonify({"error": str(e)}), 500
 
 @student_bp.route('/api/submit_answer', methods=['POST'])
-@login_required(role='student')
+@login_required
 def submit_answer():
     """Submit answer for current question"""
     answer_data = request.json
@@ -261,7 +268,7 @@ def submit_answer():
         return jsonify({"error": "Invalid question index"}), 400
 
 @student_bp.route('/api/next_question', methods=['POST'])
-@login_required(role='student')
+@login_required
 def next_question():
     """Move to next question"""
     session['current_question'] += 1
@@ -282,7 +289,8 @@ def next_question():
             "timestamp": datetime.now(),
             "workspace_id": session.get('workspace'),
             "published": False,
-            "completion_time": (datetime.now() - datetime.fromisoformat(session['quiz_start_time'])).total_seconds()
+            "completion_time": (datetime.now() - datetime.fromisoformat(session['quiz_start_time'])).total_seconds(),
+            "quiz_id": session.get('quiz_id')
         })
         
         return jsonify({"finished": True})
@@ -290,7 +298,7 @@ def next_question():
     return jsonify(questions[current_index])
 
 @student_bp.route('/api/finish_quiz', methods=['POST'])
-@login_required(role='student')
+@login_required
 def finish_quiz():
     """Finish quiz and calculate results"""
     try:
@@ -379,7 +387,7 @@ def finish_quiz():
         }), 500
 
 @student_bp.route('/check_time', methods=['GET'])
-@login_required(role='student')
+@login_required
 def check_time():
     """Check remaining quiz time"""
     if 'quiz_start_time' not in session:
@@ -398,7 +406,7 @@ def check_time():
     })
 
 @student_bp.route('/feedback', methods=['GET', 'POST'])
-@login_required(role='student')
+@login_required
 def feedback():
     """Feedback page after quiz"""
     user = users_collection.find_one({'scholar_id': session['scholar_id']}, {'_id': 0})
@@ -450,7 +458,7 @@ def feedback():
     return render_template('feedback.html', user=user)
 
 @student_bp.route('/view_score')
-@login_required(role='student')
+@login_required
 def view_score():
     """View quiz scores"""
     user = users_collection.find_one({'scholar_id': session['scholar_id']}, {'_id': 0})
@@ -474,7 +482,7 @@ def view_score():
     )
 
 @student_bp.route('/api/update_profile', methods=['POST'])
-@login_required(role='student')
+@login_required
 def update_profile():
     """Update student profile"""
     name = request.json.get('name')
@@ -503,7 +511,7 @@ def update_profile():
     return jsonify({"success": True, "message": "Profile updated successfully"})
 
 @student_bp.route('/api/check_quiz_attempt')
-@login_required(role='student')
+@login_required
 def check_quiz_attempt():
     """Check if student has already attempted the current quiz"""
     try:
@@ -529,7 +537,7 @@ def check_quiz_attempt():
         return jsonify({"attempted": False})
 
 @student_bp.route('/api/check_blocked')
-@login_required(role='student')
+@login_required
 def check_blocked():
     """Check if student is blocked"""
     user = users_collection.find_one({'scholar_id': session['scholar_id']})
@@ -538,7 +546,7 @@ def check_blocked():
     return jsonify({"blocked": False})
 
 @student_bp.route('/api/debug_answers', methods=['GET'])
-@login_required(role='student')
+@login_required
 def debug_answers():
     """Debug answers for testing"""
     if 'questions' not in session:
@@ -568,7 +576,7 @@ def debug_answers():
     })
 
 @student_bp.route('/api/clear_quiz_data', methods=['POST'])
-@login_required(role='student')
+@login_required
 def clear_quiz_data():
     """Clear quiz data from session"""
     session.pop('questions', None)

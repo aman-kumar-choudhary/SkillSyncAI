@@ -125,23 +125,6 @@
         line-height: 1.5;
       }
 
-      #fullscreen-warning button {
-        margin-top: 20px;
-        padding: 12px 24px;
-        background: #3b82f6;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1.1rem;
-        font-weight: 600;
-        transition: background 0.3s ease;
-      }
-
-      #fullscreen-warning button:hover {
-        background: #2563eb;
-      }
-
       /* Tab switching warning */
       #tab-warning {
         position: fixed;
@@ -205,33 +188,142 @@
         padding: 20px;
       }
 
-      #blocked-modal h2 {
-        font-size: 2rem;
-        margin-bottom: 20px;
-        color: #ef4444;
+      /* Initial Loading Modal */
+      #initial-loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9998;
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
       }
 
-      #blocked-modal p {
+      #initial-loading h2 {
+        font-size: 2rem;
+        margin-bottom: 20px;
+        color: #3b82f6;
+      }
+
+      #initial-loading p {
         font-size: 1.2rem;
         margin-bottom: 10px;
         line-height: 1.5;
       }
 
-      #blocked-modal button {
-        margin-top: 20px;
-        padding: 12px 24px;
-        background: #3b82f6;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-size: 1.1rem;
-        font-weight: 600;
-        transition: background 0.3s ease;
+      .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3b82f6;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 2s linear infinite;
+        margin: 20px auto;
       }
 
-      #blocked-modal button:hover {
-        background: #2563eb;
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* AI Status Panel */
+      #ai-status-panel {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        padding: 16px;
+        z-index: 1000;
+        min-width: 200px;
+        display: none;
+        border: 2px solid #e5e7eb;
+      }
+
+      #ai-status-panel h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+      }
+
+      .ai-status-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        font-size: 0.875rem;
+      }
+
+      .ai-status-label {
+        color: #6b7280;
+      }
+
+      .ai-status-value {
+        font-weight: 500;
+      }
+
+      .status-normal {
+        color: #10b981;
+      }
+
+      .status-warning {
+        color: #f59e0b;
+      }
+
+      .status-critical {
+        color: #ef4444;
+        animation: pulse 1s infinite;
+      }
+
+      #ai-warning {
+        margin-top: 12px;
+        padding: 8px 12px;
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        color: #92400e;
+        display: none;
+      }
+
+      /* Notification Toast System */
+      #notification-toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10003;
+        transition: all 0.3s ease-in-out;
+        transform: translateX(100%);
+        display: none;
+      }
+
+      #notification-toast.show {
+        transform: translateX(0);
+      }
+
+      .toast-warning {
+        border-left-color: #f59e0b;
+      }
+      .toast-critical {
+        border-left-color: #ef4444;
+      }
+      .toast-info {
+        border-left-color: #3b82f6;
       }
 
       /* Prevent text selection and copying */
@@ -251,9 +343,107 @@
         -ms-user-select: none;
         user-select: none;
       }
+
+      /* Main content initially hidden */
+      #quiz-content {
+        display: none;
+      }
     </style>
   </head>
   <body class="bg-gray-100 no-select">
+    <!-- Initial Loading Modal -->
+    <div id="initial-loading">
+      <div class="bg-white text-gray-800 rounded-2xl p-8 max-w-md mx-auto">
+        <div class="text-blue-500 text-4xl mb-4">
+          <i class="fas fa-robot"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+          Starting Quiz Session
+        </h2>
+        <p class="text-gray-600 mb-4" id="loading-message">
+          Initializing security measures...
+        </p>
+        <div class="loading-spinner"></div>
+        <div
+          class="mt-4 p-4 bg-blue-50 border border-blue-300 rounded-lg text-sm"
+        >
+          <p class="font-medium text-blue-800 mb-2">Please wait while we:</p>
+          <ul class="text-blue-700 space-y-1 list-disc list-inside">
+            <li>Enable fullscreen mode</li>
+            <li>Initialize AI proctoring</li>
+            <li>Load quiz questions</li>
+            <li>Start security monitoring</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Monitoring Status Panel -->
+    <div id="ai-status-panel">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-gray-800 flex items-center">
+          <i class="fas fa-robot mr-2 text-blue-500"></i>AI Monitoring
+        </h3>
+        <span
+          id="ai-status-indicator"
+          class="w-3 h-3 rounded-full bg-green-500"
+        ></span>
+      </div>
+      <div class="space-y-2">
+        <div class="ai-status-item">
+          <span class="ai-status-label">Face Detection:</span>
+          <span id="face-status" class="ai-status-value status-normal"
+            >Active</span
+          >
+        </div>
+        <div class="ai-status-item">
+          <span class="ai-status-label">Violations:</span>
+          <span id="violation-count" class="ai-status-value status-normal"
+            >0</span
+          >
+        </div>
+        <div class="ai-status-item">
+          <span class="ai-status-label">Status:</span>
+          <span id="monitoring-status" class="ai-status-value status-normal"
+            >Normal</span
+          >
+        </div>
+      </div>
+      <div
+        id="ai-warning"
+        class="mt-3 p-2 bg-yellow-100 border border-yellow-400 rounded text-yellow-700 text-xs hidden"
+      >
+        <i class="fas fa-exclamation-triangle mr-1"></i>
+        <span id="warning-message"></span>
+      </div>
+    </div>
+
+    <!-- Notification Toast System -->
+    <div id="notification-toast" class="hidden">
+      <div
+        class="bg-white rounded-lg shadow-lg border-l-4 p-4 max-w-sm toast-warning"
+      >
+        <div class="flex items-start">
+          <div id="toast-icon" class="flex-shrink-0 mr-3">
+            <i class="fas fa-exclamation-triangle text-yellow-500 text-xl"></i>
+          </div>
+          <div class="flex-1">
+            <h4 id="toast-title" class="font-semibold text-gray-800">
+              Proctoring Alert
+            </h4>
+            <p id="toast-message" class="text-sm text-gray-600 mt-1"></p>
+            <p id="toast-time" class="text-xs text-gray-500 mt-2"></p>
+          </div>
+          <button
+            onclick="hideNotification()"
+            class="flex-shrink-0 ml-4 text-gray-400 hover:text-gray-600"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Blocked User Modal -->
     <div id="blocked-modal">
       <div class="bg-white text-gray-800 rounded-2xl p-8 max-w-md mx-auto">
@@ -280,7 +470,7 @@
     <!-- Violation Counter -->
     <div id="violation-counter">
       <i class="fas fa-exclamation-triangle mr-2"></i>
-      Violations: <span id="violation-count">0</span>/3
+      Violations: <span id="violation-count-display">0</span>/10
     </div>
 
     <!-- Fullscreen Warning -->
@@ -293,10 +483,8 @@
           Fullscreen Required
         </h2>
         <p class="text-lg text-gray-700 mb-4">
-          This quiz must be taken in fullscreen mode to maintain exam integrity.
-        </p>
-        <p class="text-gray-600 mb-6">
-          Please enable fullscreen to continue with your quiz.
+          Fullscreen mode is required for this quiz. Please enable fullscreen to
+          continue.
         </p>
         <button
           id="enable-fullscreen"
@@ -321,7 +509,7 @@
           Returning to quiz in <span id="countdown">10</span> seconds...
         </p>
         <button
-          onclick="hideTabWarning()"
+          id="return-to-quiz"
           class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors w-full"
         >
           Return to Quiz Now
@@ -329,8 +517,8 @@
       </div>
     </div>
 
-    <!-- Rest of your existing HTML content remains the same -->
-    <div class="min-h-screen flex flex-col">
+    <!-- Main Quiz Content (initially hidden) -->
+    <div id="quiz-content" class="min-h-screen flex flex-col">
       <!-- Navigation Bar -->
       <nav class="bg-gradient-to-r from-blue-700 to-blue-800 shadow-lg p-4">
         <div
@@ -459,6 +647,7 @@
         </div>
       </div>
     </div>
+
     <script>
       let questions = [];
       let currentQuestionIndex = 0;
@@ -470,23 +659,58 @@
       let timerInterval;
       let fullscreenEnabled = false;
       let tabSwitchCount = 0;
-      let maxTabSwitches = 3;
+      let maxTabSwitches = 10; // Increased for notifications
       let visibilityChangeHandler;
       let autoSubmitTimeout;
       let isBlocked = false;
+      let tabWarningCountdownInterval;
 
-      // Enhanced Fullscreen functions
+      // === AI MONITORING ===
+      let aiMonitoringActive = false;
+      let aiStatusCheckInterval;
+      let lastViolationCount = 0;
+      let quizId = "{{ quiz_id }}";
+
+      // === NOTIFICATION SYSTEM ===
+      let notificationQueue = [];
+      let isShowingNotification = false;
+      let shownNotificationIds = new Set();
+
+      // Enhanced fullscreen functions
       function enterFullscreen() {
         const elem = document.documentElement;
         return new Promise((resolve, reject) => {
-          if (elem.requestFullscreen) {
-            elem.requestFullscreen().then(resolve).catch(reject);
-          } else if (elem.webkitRequestFullscreen) {
-            elem.webkitRequestFullscreen().then(resolve).catch(reject);
-          } else if (elem.msRequestFullscreen) {
-            elem.msRequestFullscreen().then(resolve).catch(reject);
-          } else {
+          if (checkFullscreen()) {
+            resolve();
+            return;
+          }
+
+          const requestFullscreen =
+            elem.requestFullscreen ||
+            elem.webkitRequestFullscreen ||
+            elem.msRequestFullscreen;
+
+          if (!requestFullscreen) {
             reject(new Error("Fullscreen API not supported"));
+            return;
+          }
+
+          const fullscreenPromise = requestFullscreen.call(elem);
+
+          if (fullscreenPromise) {
+            fullscreenPromise.then(resolve).catch(reject);
+          } else {
+            const checkFullscreenInterval = setInterval(() => {
+              if (checkFullscreen()) {
+                clearInterval(checkFullscreenInterval);
+                resolve();
+              }
+            }, 100);
+
+            setTimeout(() => {
+              clearInterval(checkFullscreenInterval);
+              reject(new Error("Fullscreen request timed out"));
+            }, 3000);
           }
         });
       }
@@ -517,64 +741,218 @@
         document.getElementById("fullscreen-warning").style.display = "none";
       }
 
-      function showViolationCounter() {
-        const counter = document.getElementById("violation-counter");
-        const count = document.getElementById("violation-count");
-        count.textContent = tabSwitchCount;
-        counter.style.display = "block";
+      // AI Monitoring Functions
+      async function initializeAIMonitoring() {
+        try {
+          updateLoadingMessage("Initializing AI proctoring...");
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+
+          const res = await fetch("/api/ai_monitoring/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ quiz_id: quizId }),
+          });
+
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+
+          const data = await res.json();
+
+          if (data.success) {
+            aiMonitoringActive = true;
+            showAIStatusPanel();
+            startAIStatusMonitoring();
+            console.log("AI monitoring started successfully");
+            return true;
+          } else {
+            throw new Error(data.error || "Failed to start AI monitoring");
+          }
+        } catch (err) {
+          console.error("AI Monitoring error:", err);
+          updateLoadingMessage(
+            "AI monitoring unavailable - continuing without proctoring"
+          );
+          return false;
+        }
       }
 
-      function updateViolationCounter() {
-        const count = document.getElementById("violation-count");
-        count.textContent = tabSwitchCount;
+      function showAIStatusPanel() {
+        document.getElementById("ai-status-panel").style.display = "block";
       }
 
-      function showTabWarning(isFinalWarning = false) {
-        const tabWarning = document.getElementById("tab-warning");
-        const violationMessage = document.getElementById("violation-message");
+      function startAIStatusMonitoring() {
+        aiStatusCheckInterval = setInterval(async () => {
+          if (!aiMonitoringActive || quizSubmitted) {
+            clearInterval(aiStatusCheckInterval);
+            return;
+          }
+          try {
+            const res = await fetch("/api/ai_monitoring/status");
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
 
-        if (isFinalWarning) {
-          violationMessage.innerHTML = `<strong style="color: #EF4444">Final Warning! Quiz will be submitted automatically on next violation.</strong>`;
+            const data = await res.json();
+            if (data.success) {
+              updateAIStatusPanel(data.status);
+
+              // Check for new notifications
+              if (
+                data.status.active_notifications &&
+                data.status.active_notifications.length > 0
+              ) {
+                const newNotifications =
+                  data.status.active_notifications.filter(
+                    (notification) =>
+                      !shownNotificationIds.has(notification.violation_id)
+                  );
+
+                newNotifications.forEach((notification) => {
+                  showNotification(
+                    notification.type,
+                    notification.description,
+                    notification.severity || "warning"
+                  );
+                  shownNotificationIds.add(notification.violation_id);
+                });
+              }
+
+              // Update violation count display
+              if (
+                data.status.violation_summary.total_violations >
+                lastViolationCount
+              ) {
+                lastViolationCount =
+                  data.status.violation_summary.total_violations;
+                updateViolationCounter();
+              }
+            }
+          } catch (e) {
+            console.error("AI status check error:", e);
+          }
+        }, 3000);
+      }
+
+      function updateAIStatusPanel(status) {
+        document.getElementById("violation-count").textContent =
+          status.violation_summary.total_violations;
+        const recent = status.violation_summary.violations.slice(0, 3);
+        const indicator = document.getElementById("ai-status-indicator");
+        const warning = document.getElementById("ai-warning");
+        const msg = document.getElementById("warning-message");
+
+        if (recent.length > 0) {
+          indicator.className =
+            "w-3 h-3 rounded-full bg-yellow-500 animate-pulse";
+          document.getElementById("monitoring-status").textContent = "Warning";
+          document.getElementById("monitoring-status").className =
+            "ai-status-value status-warning";
+          msg.textContent = recent[0].description || "Suspicious activity";
+          warning.style.display = "block";
         } else {
-          violationMessage.textContent = `Switching tabs or applications is not allowed. Violation ${tabSwitchCount} of ${maxTabSwitches}.`;
+          indicator.className = "w-3 h-3 rounded-full bg-green-500";
+          document.getElementById("monitoring-status").textContent = "Normal";
+          document.getElementById("monitoring-status").className =
+            "ai-status-value status-normal";
+          warning.style.display = "none";
+        }
+      }
+
+      // Notification System Functions
+      function showNotification(type, message, severity = "warning") {
+        const notification = {
+          type,
+          message,
+          severity,
+          timestamp: new Date(),
+        };
+
+        notificationQueue.push(notification);
+        processNotificationQueue();
+      }
+
+      function processNotificationQueue() {
+        if (isShowingNotification || notificationQueue.length === 0) return;
+
+        isShowingNotification = true;
+        const notification = notificationQueue.shift();
+        displayNotification(notification);
+      }
+
+      function displayNotification(notification) {
+        const toast = document.getElementById("notification-toast");
+        const toastIcon = document.getElementById("toast-icon");
+        const toastTitle = document.getElementById("toast-title");
+        const toastMessage = document.getElementById("toast-message");
+        const toastTime = document.getElementById("toast-time");
+
+        // Set content
+        toastTitle.textContent = getNotificationTitle(notification.type);
+        toastMessage.textContent = notification.message;
+        toastTime.textContent = notification.timestamp.toLocaleTimeString();
+
+        // Set styling based on severity
+        toast.className = toast.className.replace(/toast-\w+/g, "");
+        toast.classList.add(`toast-${notification.severity}`);
+
+        // Set icon
+        let iconClass = "fas fa-exclamation-triangle";
+        let iconColor = "text-yellow-500";
+
+        if (notification.severity === "critical") {
+          iconClass = "fas fa-exclamation-circle";
+          iconColor = "text-red-500";
+        } else if (notification.severity === "info") {
+          iconClass = "fas fa-info-circle";
+          iconColor = "text-blue-500";
         }
 
-        tabWarning.style.display = "flex";
+        toastIcon.innerHTML = `<i class="${iconClass} ${iconColor} text-xl"></i>`;
 
-        let countdown = 10;
-        const countdownElement = document.getElementById("countdown");
-        countdownElement.textContent = countdown;
+        // Show toast
+        toast.style.display = "block";
+        setTimeout(() => {
+          toast.classList.add("show");
+        }, 10);
 
-        const countdownInterval = setInterval(() => {
-          countdown--;
-          countdownElement.textContent = countdown;
-
-          if (countdown <= 0) {
-            clearInterval(countdownInterval);
-            hideTabWarning();
-          }
-        }, 1000);
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+          hideNotification();
+        }, 5000);
       }
 
-      function hideTabWarning() {
-        const tabWarning = document.getElementById("tab-warning");
-        tabWarning.style.display = "none";
+      function hideNotification() {
+        const toast = document.getElementById("notification-toast");
+        toast.classList.remove("show");
+        setTimeout(() => {
+          toast.style.display = "none";
+          isShowingNotification = false;
+          processNotificationQueue();
+        }, 300);
       }
 
-      function showBlockedModal() {
-        document.getElementById("blocked-modal").style.display = "flex";
-        isBlocked = true;
+      function getNotificationTitle(violationType) {
+        const titles = {
+          multiple_faces: "Multiple Faces Detected",
+          face_not_visible: "Face Not Visible",
+          head_turn: "Suspicious Head Movement",
+          looking_down: "Looking Away From Screen",
+          gaze_left: "Looking to the Left",
+          gaze_right: "Looking to the Right",
+          suspicious_object: "Unauthorized Object Detected",
+          prolonged_face_absence: "Face Not Detected",
+          tab_switch: "Tab Switch Detected",
+        };
 
-        // Clear any ongoing intervals
-        clearInterval(timerInterval);
-        if (autoSubmitTimeout) clearTimeout(autoSubmitTimeout);
-
-        // Remove event listeners
-        removeVisibilityTracking();
+        return titles[violationType] || "Proctoring Alert";
       }
 
-      function redirectToDashboard() {
-        window.location.href = "{{ url_for('student.student_dashboard') }}";
+      function updateLoadingMessage(message) {
+        const loadingMessage = document.getElementById("loading-message");
+        if (loadingMessage) {
+          loadingMessage.textContent = message;
+        }
       }
 
       // Enhanced visibility tracking with focus/blur detection
@@ -608,45 +986,18 @@
 
         window.addEventListener("focus", function () {
           if (!quizSubmitted && !isBlocked) {
-            // Check if we're returning from a violation
             if (tabSwitchCount > 0) {
               showTabWarning(tabSwitchCount >= maxTabSwitches);
             }
           }
         });
 
-        document.addEventListener(
-          visibilityChange,
-          visibilityChangeHandler,
-          false
-        );
-      }
-
-      function handleViolation(type) {
-        if (quizSubmitted || isBlocked) return;
-
-        tabSwitchCount++;
-        updateViolationCounter();
-
-        console.log(
-          `Violation detected (${type}): ${tabSwitchCount}/${maxTabSwitches}`
-        );
-
-        if (tabSwitchCount >= maxTabSwitches) {
-          // Final violation - auto submit quiz
-          showTabWarning(true);
-          autoSubmitTimeout = setTimeout(() => {
-            forceSubmitQuiz(
-              "Maximum violations exceeded. Quiz submitted automatically."
-            );
-          }, 5000);
-        } else if (tabSwitchCount === 1) {
-          // First violation - show counter and warning
-          showViolationCounter();
-          showTabWarning(false);
-        } else {
-          // Subsequent violations
-          showTabWarning(false);
+        if (visibilityChange) {
+          document.addEventListener(
+            visibilityChange,
+            visibilityChangeHandler,
+            false
+          );
         }
       }
 
@@ -673,42 +1024,124 @@
         window.removeEventListener("focus", handleViolation);
       }
 
-      // Enhanced anti-cheating measures
-      document.addEventListener("contextmenu", function (e) {
-        e.preventDefault();
-        return false;
-      });
+      function showViolationCounter() {
+        const counter = document.getElementById("violation-counter");
+        const count = document.getElementById("violation-count-display");
+        count.textContent = tabSwitchCount;
+        counter.style.display = "block";
+      }
 
-      document.addEventListener("keydown", function (e) {
-        // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Alt+Tab, etc.
-        if (
-          e.key === "F12" ||
-          (e.ctrlKey && e.shiftKey && e.key === "I") ||
-          (e.ctrlKey && e.shiftKey && e.key === "J") ||
-          (e.ctrlKey && e.key === "u") ||
-          (e.altKey && e.key === "Tab") ||
-          (e.metaKey && e.key === "Tab") ||
-          (e.ctrlKey && e.key === "c") ||
-          (e.ctrlKey && e.key === "v")
-        ) {
-          e.preventDefault();
-          if (!quizSubmitted && !isBlocked) {
-            handleViolation("keyboard_shortcut");
-          }
-          return false;
+      function updateViolationCounter() {
+        const count = document.getElementById("violation-count-display");
+        count.textContent = tabSwitchCount;
+      }
+
+      function showTabWarning(isFinalWarning = false) {
+        const tabWarning = document.getElementById("tab-warning");
+        const violationMessage = document.getElementById("violation-message");
+        const returnToQuizBtn = document.getElementById("return-to-quiz");
+
+        if (isFinalWarning) {
+          violationMessage.innerHTML = `<strong style="color: #EF4444">FINAL WARNING! Further violations may result in quiz termination.</strong>`;
+        } else {
+          violationMessage.textContent = `Switching tabs or applications is not allowed. Violation ${tabSwitchCount} of ${maxTabSwitches}.`;
         }
-      });
 
-      // Prevent drag and drop
-      document.addEventListener("dragstart", function (e) {
-        e.preventDefault();
-        return false;
-      });
+        tabWarning.style.display = "flex";
 
-      document.addEventListener("drop", function (e) {
-        e.preventDefault();
-        return false;
-      });
+        let countdown = isFinalWarning ? 5 : 10;
+        const countdownElement = document.getElementById("countdown");
+        countdownElement.textContent = countdown;
+
+        // Clear any existing countdown interval
+        if (tabWarningCountdownInterval) {
+          clearInterval(tabWarningCountdownInterval);
+        }
+
+        tabWarningCountdownInterval = setInterval(() => {
+          countdown--;
+          countdownElement.textContent = countdown;
+
+          if (countdown <= 0) {
+            clearInterval(tabWarningCountdownInterval);
+            hideTabWarning();
+          }
+        }, 1000);
+
+        // Update button event listener
+        returnToQuizBtn.onclick = function () {
+          clearInterval(tabWarningCountdownInterval);
+          hideTabWarning();
+        };
+      }
+
+      function hideTabWarning() {
+        const tabWarning = document.getElementById("tab-warning");
+        if (tabWarningCountdownInterval) {
+          clearInterval(tabWarningCountdownInterval);
+          tabWarningCountdownInterval = null;
+        }
+        tabWarning.style.display = "none";
+      }
+
+      function handleViolation(type) {
+        if (quizSubmitted || isBlocked) return;
+
+        // Clear any existing auto-submit timeout to prevent multiple timers
+        if (autoSubmitTimeout) {
+          clearTimeout(autoSubmitTimeout);
+          autoSubmitTimeout = null;
+        }
+
+        tabSwitchCount++;
+        updateViolationCounter();
+
+        console.log(
+          `Violation detected (${type}): ${tabSwitchCount}/${maxTabSwitches}`
+        );
+
+        // Show notification instead of blocking immediately
+        showNotification(
+          "tab_switch",
+          `Tab switching detected (${tabSwitchCount}/${maxTabSwitches}). Continued violations may result in quiz termination.`,
+          "warning"
+        );
+
+        if (tabSwitchCount >= maxTabSwitches) {
+          // Only show final warning, don't auto-submit immediately
+          showNotification(
+            "tab_switch",
+            "FINAL WARNING! Further violations will result in quiz termination.",
+            "critical"
+          );
+          showTabWarning(true);
+        } else if (tabSwitchCount === 1) {
+          // First violation - show counter and warning
+          showViolationCounter();
+          showTabWarning(false);
+        } else {
+          // Subsequent violations
+          showTabWarning(false);
+        }
+      }
+
+      function showBlockedModal() {
+        document.getElementById("blocked-modal").style.display = "flex";
+        isBlocked = true;
+
+        // Clear any ongoing intervals
+        clearInterval(timerInterval);
+        if (autoSubmitTimeout) clearTimeout(autoSubmitTimeout);
+        if (tabWarningCountdownInterval)
+          clearInterval(tabWarningCountdownInterval);
+
+        // Remove event listeners
+        removeVisibilityTracking();
+      }
+
+      function redirectToDashboard() {
+        window.location.href = "{{ url_for('student.student_dashboard') }}";
+      }
 
       // Check if user is blocked
       async function checkIfBlocked() {
@@ -745,7 +1178,7 @@
         }
       }
 
-      // ADD THE MISSING QUIZ FUNCTIONS HERE
+      // Quiz functions
       function initializeQuestionNavigation() {
         const questionNavigation = document.getElementById(
           "question-navigation"
@@ -888,65 +1321,60 @@
 
         // Build question HTML
         quizContainer.innerHTML = `
-            <div class="mb-6">
-                <p class="question-text text-blue-800 mb-6">Question ${
-                  questionIndex + 1
-                } of ${questions.length}: ${question.text}</p>
-                ${
-                  question.image_path
-                    ? `<img src="/static/uploads/${question.image_path}" alt="Question image" class="mb-4 max-w-full h-auto rounded-lg">`
-                    : ""
-                }
-                <div class="space-y-4">
-                    ${question.options
-                      .map((option, i) => {
-                        const isSelected =
-                          userAnswers[questionIndex] === option;
-                        const isDisabled = isAnswered && !isSkipped;
+        <div class="mb-6">
+            <p class="question-text text-blue-800 mb-6">Question ${
+              questionIndex + 1
+            } of ${questions.length}: ${question.text}</p>
+            ${
+              question.image_path
+                ? `<img src="/static/uploads/${question.image_path}" alt="Question image" class="mb-4 max-w-full h-auto rounded-lg">`
+                : ""
+            }
+            <div class="space-y-4">
+                ${question.options
+                  .map((option, i) => {
+                    const isSelected = userAnswers[questionIndex] === option;
+                    const isDisabled = isAnswered && !isSkipped;
 
-                        return `
-                        <label class="block option-text p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all option-label ${
-                          isDisabled ? "option-disabled" : ""
-                        } ${
-                          isSelected
-                            ? questionStatuses[questionIndex] === "correct"
-                              ? "correct-answer"
-                              : "wrong-answer"
-                            : ""
-                        }">
-                            <input type="radio" name="answer" value="${option}" class="mr-3 hidden option-input" ${
-                          isDisabled ? "disabled" : ""
-                        } ${isSelected ? "checked" : ""}>
-                            ${String.fromCharCode(65 + i)}. ${option}
-                        </label>
-                    `;
-                      })
-                      .join("")}
-                </div>
+                    return `
+                    <label class="block option-text p-4 border-2 border-gray-200 rounded-lg cursor-pointer transition-all option-label ${
+                      isDisabled ? "option-disabled" : ""
+                    } ${
+                      isSelected
+                        ? questionStatuses[questionIndex] === "correct"
+                          ? "correct-answer"
+                          : "wrong-answer"
+                        : ""
+                    }">
+                        <input type="radio" name="answer" value="${option}" class="mr-3 hidden option-input" ${
+                      isDisabled ? "disabled" : ""
+                    } ${isSelected ? "checked" : ""}>
+                        ${String.fromCharCode(65 + i)}. ${option}
+                    </label>
+                `;
+                  })
+                  .join("")}
             </div>
-        `;
+        </div>
+    `;
 
         if (isAnswered && answerFeedback) {
           answerFeedback.classList.remove("hidden");
           const wasCorrect = questionStatuses[questionIndex] === "correct";
 
           answerFeedback.innerHTML = `
-                <p class="font-semibold ${
-                  wasCorrect ? "text-green-600" : "text-red-600"
-                }">
-                    ${
-                      wasCorrect
-                        ? "✓ Correct! +1 point"
-                        : "✗ Incorrect! No points"
-                    }
-                </p>
-                <p class="mt-2">Correct answer: <span class="font-medium">${
-                  question.correct_answer
-                }</span></p>
-                <p class="mt-1 text-sm text-gray-600">Question ${
-                  questionIndex + 1
-                } of ${questions.length}</p>
-            `;
+            <p class="font-semibold ${
+              wasCorrect ? "text-green-600" : "text-red-600"
+            }">
+                ${wasCorrect ? "✓ Correct! +1 point" : "✗ Incorrect! No points"}
+            </p>
+            <p class="mt-2">Correct answer: <span class="font-medium">${
+              question.correct_answer
+            }</span></p>
+            <p class="mt-1 text-sm text-gray-600">Question ${
+              questionIndex + 1
+            } of ${questions.length}</p>
+        `;
         }
 
         if (!isAnswered) {
@@ -1065,24 +1493,22 @@
               const answerFeedback = document.getElementById("answer-feedback");
               if (answerFeedback) {
                 answerFeedback.innerHTML = `
-                            <p class="font-semibold ${
+                        <p class="font-semibold ${
+                          data.is_correct ? "text-green-600" : "text-red-600"
+                        }">
+                            ${
                               data.is_correct
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }">
-                                ${
-                                  data.is_correct
-                                    ? "✓ Correct! +1 point"
-                                    : "✗ Incorrect! No points"
-                                }
-                            </p>
-                            <p class="mt-2">Correct answer: <span class="font-medium">${
-                              data.correct_answer
-                            }</span></p>
-                            <p class="mt-1 text-sm text-gray-600">Question ${
-                              currentQuestionIndex + 1
-                            } of ${questions.length}</p>
-                        `;
+                                ? "✓ Correct! +1 point"
+                                : "✗ Incorrect! No points"
+                            }
+                        </p>
+                        <p class="mt-2">Correct answer: <span class="font-medium">${
+                          data.correct_answer
+                        }</span></p>
+                        <p class="mt-1 text-sm text-gray-600">Question ${
+                          currentQuestionIndex + 1
+                        } of ${questions.length}</p>
+                    `;
                 answerFeedback.classList.remove("hidden");
               }
 
@@ -1135,7 +1561,27 @@
 
         // Clear all intervals and timeouts
         clearInterval(timerInterval);
-        if (autoSubmitTimeout) clearTimeout(autoSubmitTimeout);
+        if (autoSubmitTimeout) {
+          clearTimeout(autoSubmitTimeout);
+          autoSubmitTimeout = null;
+        }
+        if (tabWarningCountdownInterval) {
+          clearInterval(tabWarningCountdownInterval);
+          tabWarningCountdownInterval = null;
+        }
+
+        // Stop AI monitoring
+        if (aiMonitoringActive) {
+          fetch("/api/ai_monitoring/stop", { method: "POST" }).catch((error) =>
+            console.error("Error stopping AI monitoring:", error)
+          );
+          aiMonitoringActive = false;
+        }
+
+        // Clear AI monitoring interval
+        if (aiStatusCheckInterval) {
+          clearInterval(aiStatusCheckInterval);
+        }
 
         // Remove anti-cheating measures
         removeVisibilityTracking();
@@ -1144,15 +1590,15 @@
         const quizContainer = document.getElementById("quiz-container");
         if (quizContainer) {
           quizContainer.innerHTML = `
-                    <div class="text-center py-8">
-                        <div class="text-red-500 text-4xl mb-4">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <h2 class="text-2xl font-bold text-red-600 mb-4">Quiz Submitted Automatically</h2>
-                        <p class="text-lg text-gray-700 mb-4">${reason}</p>
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+                <div class="text-center py-8">
+                    <div class="text-red-500 text-4xl mb-4">
+                        <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                `;
+                    <h2 class="text-2xl font-bold text-red-600 mb-4">Quiz Submitted Automatically</h2>
+                    <p class="text-lg text-gray-700 mb-4">${reason}</p>
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600 mx-auto"></div>
+                </div>
+            `;
         }
 
         // Disable all buttons
@@ -1171,6 +1617,19 @@
 
         clearInterval(timerInterval);
         removeVisibilityTracking();
+
+        // Stop AI monitoring
+        if (aiMonitoringActive) {
+          fetch("/api/ai_monitoring/stop", { method: "POST" }).catch((error) =>
+            console.error("Error stopping AI monitoring:", error)
+          );
+          aiMonitoringActive = false;
+        }
+
+        // Clear AI monitoring interval
+        if (aiStatusCheckInterval) {
+          clearInterval(aiStatusCheckInterval);
+        }
 
         console.log("Normal quiz submission");
         submitQuizData("Quiz completed normally");
@@ -1228,101 +1687,124 @@
           });
       }
 
-      document.addEventListener("DOMContentLoaded", async () => {
-        // Check if user is blocked
-        isBlocked = await checkIfBlocked();
-        if (isBlocked) return;
+      // Main initialization function
+      async function initializeQuiz() {
+        try {
+          // Step 1: Check if user is blocked
+          updateLoadingMessage("Checking account status...");
+          isBlocked = await checkIfBlocked();
+          if (isBlocked) return;
 
-        // Check if quiz already attempted
-        const alreadyAttempted = await checkQuizAttempt();
-        if (alreadyAttempted) return;
+          // Step 2: Check if quiz already attempted
+          updateLoadingMessage("Verifying quiz access...");
+          const alreadyAttempted = await checkQuizAttempt();
+          if (alreadyAttempted) return;
 
-        const quizContainer = document.getElementById("quiz-container");
-        const enableFullscreenBtn =
-          document.getElementById("enable-fullscreen");
-
-        // Initialize fullscreen
-        enableFullscreenBtn.addEventListener("click", async () => {
+          // Step 3: Enable fullscreen automatically (with better error handling)
+          updateLoadingMessage("Enabling fullscreen mode...");
           try {
             await enterFullscreen();
             fullscreenEnabled = true;
-            hideFullscreenWarning();
-            startQuiz();
+            console.log("Fullscreen enabled successfully");
           } catch (err) {
-            console.error("Error entering fullscreen:", err);
-            alert(
-              "Please allow fullscreen mode to continue with the quiz. Click OK and then enable fullscreen."
+            console.error("Failed to enable fullscreen:", err);
+            // Show warning but continue
+            showFullscreenWarning();
+            // Don't treat this as a fatal error - continue with quiz
+          }
+
+          // Step 4: Initialize AI monitoring
+          await initializeAIMonitoring();
+
+          // Step 5: Load questions
+          updateLoadingMessage("Loading quiz questions...");
+          const questionsResponse = await fetch("/api/get_questions");
+          if (!questionsResponse.ok) {
+            throw new Error(
+              `Failed to load questions: ${questionsResponse.status}`
             );
           }
-        });
+          questions = await questionsResponse.json();
 
-        // Check fullscreen status
-        document.addEventListener("fullscreenchange", handleFullscreenChange);
-        document.addEventListener(
-          "webkitfullscreenchange",
-          handleFullscreenChange
-        );
-        document.addEventListener("msfullscreenchange", handleFullscreenChange);
-
-        function handleFullscreenChange() {
-          if (checkFullscreen()) {
-            fullscreenEnabled = true;
-            hideFullscreenWarning();
-            if (questions.length === 0) {
-              startQuiz();
-            }
-          } else {
-            fullscreenEnabled = false;
-            if (!quizSubmitted && !isBlocked) {
-              showFullscreenWarning();
-              // Count as violation if exiting fullscreen during quiz
-              if (questions.length > 0) {
-                handleViolation("fullscreen_exit");
-              }
-            }
+          if (questions.length === 0) {
+            throw new Error("No questions available for this quiz");
           }
-        }
 
-        // Show fullscreen warning initially
-        showFullscreenWarning();
-
-        function startQuiz() {
-          // Setup enhanced anti-cheating measures
+          // Step 6: Setup security measures
+          updateLoadingMessage("Initializing security measures...");
           setupVisibilityTracking();
 
-          // Load questions
-          fetch("/api/get_questions")
-            .then((response) => response.json())
-            .then((data) => {
-              questions = data;
-              if (questions.length > 0) {
-                initializeQuestionNavigation();
-                loadQuestion(questions[0]);
+          // Step 7: Setup anti-cheating measures
+          document.addEventListener("contextmenu", function (e) {
+            e.preventDefault();
+            return false;
+          });
 
-                // Start the timer
-                updateTimer();
-                timerInterval = setInterval(updateTimer, 1000);
-              } else {
-                if (quizContainer) {
-                  quizContainer.innerHTML =
-                    '<p class="text-red-500 text-center text-xl">No questions available. Please contact support.</p>';
-                }
+          document.addEventListener("keydown", function (e) {
+            // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Alt+Tab, etc.
+            if (
+              e.key === "F12" ||
+              (e.ctrlKey && e.shiftKey && e.key === "I") ||
+              (e.ctrlKey && e.shiftKey && e.key === "J") ||
+              (e.ctrlKey && e.key === "u") ||
+              (e.altKey && e.key === "Tab") ||
+              (e.metaKey && e.key === "Tab") ||
+              (e.ctrlKey && e.key === "c") ||
+              (e.ctrlKey && e.key === "v")
+            ) {
+              e.preventDefault();
+              if (!quizSubmitted && !isBlocked) {
+                handleViolation("keyboard_shortcut");
               }
-            })
-            .catch((error) => {
-              console.error("Error loading questions:", error);
-              if (quizContainer) {
-                quizContainer.innerHTML =
-                  '<p class="text-red-500 text-center text-xl">Error loading questions. Please try again.</p>';
-              }
-            });
+              return false;
+            }
+          });
+
+          // Prevent drag and drop
+          document.addEventListener("dragstart", function (e) {
+            e.preventDefault();
+            return false;
+          });
+
+          document.addEventListener("drop", function (e) {
+            e.preventDefault();
+            return false;
+          });
+
+          // Step 8: Initialize quiz UI
+          updateLoadingMessage("Finalizing setup...");
+          initializeQuestionNavigation();
+          loadQuestion(questions[0]);
+
+          // Step 9: Start timer
+          updateTimer();
+          timerInterval = setInterval(updateTimer, 1000);
+
+          // Step 10: Show quiz content
+          document.getElementById("initial-loading").style.display = "none";
+          document.getElementById("quiz-content").style.display = "block";
+
+          console.log("Quiz initialized successfully");
+        } catch (error) {
+          console.error("Failed to initialize quiz:", error);
+          updateLoadingMessage(`Error: ${error.message}`);
+
+          // Show error to user
+          setTimeout(() => {
+            alert(`Failed to start quiz: ${error.message}. Please try again.`);
+            window.location.href = "{{ url_for('student.student_dashboard') }}";
+          }, 2000);
         }
+      }
 
-        // Add event listeners for quiz buttons
+      // Event listeners for quiz buttons
+      function setupQuizEventListeners() {
         const submitButton = document.getElementById("submit-answer");
         const skipButton = document.getElementById("skip-question");
         const nextButton = document.getElementById("next-question");
         const finishButton = document.getElementById("finish-question");
+        const enableFullscreenBtn =
+          document.getElementById("enable-fullscreen");
 
         if (submitButton) {
           submitButton.addEventListener("click", () => {
@@ -1371,6 +1853,50 @@
             }
           });
         }
+
+        if (enableFullscreenBtn) {
+          enableFullscreenBtn.addEventListener("click", async () => {
+            try {
+              await enterFullscreen();
+              fullscreenEnabled = true;
+              hideFullscreenWarning();
+            } catch (err) {
+              console.error("Error entering fullscreen:", err);
+              alert("Please allow fullscreen mode to continue with the quiz.");
+            }
+          });
+        }
+      }
+
+      // Fullscreen change handler
+      function handleFullscreenChange() {
+        if (checkFullscreen()) {
+          fullscreenEnabled = true;
+          hideFullscreenWarning();
+        } else {
+          fullscreenEnabled = false;
+          if (!quizSubmitted && !isBlocked && questions.length > 0) {
+            showFullscreenWarning();
+            handleViolation("fullscreen_exit");
+          }
+        }
+      }
+
+      // Document ready
+      document.addEventListener("DOMContentLoaded", function () {
+        // Setup fullscreen event listeners
+        document.addEventListener("fullscreenchange", handleFullscreenChange);
+        document.addEventListener(
+          "webkitfullscreenchange",
+          handleFullscreenChange
+        );
+        document.addEventListener("msfullscreenchange", handleFullscreenChange);
+
+        // Setup quiz event listeners
+        setupQuizEventListeners();
+
+        // Start quiz initialization
+        initializeQuiz();
 
         // Add periodic blocked status check
         setInterval(async () => {

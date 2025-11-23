@@ -1,18 +1,21 @@
 from flask import Blueprint, render_template, request, session, jsonify
 from app.utils.decorators import login_required, permission_required, role_required
 from app.utils.helpers import QUESTION_TAGS
-from app.models.question_models import question_review_collection, question_bank_collection
+from app.models.question_models import question_review_collection, question_bank_collection, add_ai_feedback_to_question, update_question_with_ai_suggestions
 from app.models.user_models import users_collection
 import json
 import pandas as pd
 import uuid
 from datetime import datetime
 from bson import ObjectId
+from app.services.ai_review_service import ai_review_service
+from app.tasks.ai_review_tasks import ai_processor
+import threading
 
 questions_bp = Blueprint('questions', __name__)
 
 @questions_bp.route('/management')
-@login_required(role='admin')
+@login_required
 @role_required(2)  # Faculty level (2) and above can access
 def admin_questions_management():
     """Question management main page"""
@@ -25,7 +28,7 @@ def admin_questions_management():
                          bank_count=bank_count)
 
 @questions_bp.route('/upload', methods=['GET', 'POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('create')  # Requires create permission
 def admin_question_upload():
     """Upload questions - Requires create permission"""
@@ -122,6 +125,13 @@ def admin_question_upload():
     
     # Get paginated bank questions
     bank_questions = list(question_bank_collection.find(bank_query).skip(skip).limit(page_size))
+    ai_enabled = ai_review_service.enabled
+    pending_ai_review = question_review_collection.count_documents({
+        "$or": [
+            {"ai_feedback": {"$exists": False}},
+            {"ai_feedback.status": {"$in": ["error", "ai_disabled"]}}
+        ]
+    })
     
     return render_template('admin_question_upload.html',
                          pending_count=pending_count,
@@ -133,10 +143,13 @@ def admin_question_upload():
                          questions=review_questions,  # Questions for review tab
                          bank_questions=bank_questions,  # Questions for bank tab
                          total_bank_pages=total_bank_pages,
-                         total_bank_count=total_bank_count)
+                         total_bank_count=total_bank_count,
+                         ai_enabled = ai_enabled,
+                         pending_ai_review = pending_ai_review,
+                         is_processing = ai_processor.is_processing)
 
 @questions_bp.route('/review')
-@login_required(role='admin')
+@login_required
 @role_required(2)  # Faculty level and above
 def admin_question_review():
     """Question review page"""
@@ -160,6 +173,15 @@ def admin_question_review():
     skip = (page - 1) * page_size
     questions = list(question_review_collection.find(query).skip(skip).limit(page_size))
     
+    # Get AI system status
+    ai_enabled = ai_review_service.enabled
+    pending_ai_review = question_review_collection.count_documents({
+        "$or": [
+            {"ai_feedback": {"$exists": False}},
+            {"ai_feedback.status": {"$in": ["error", "ai_disabled"]}}
+        ]
+    })
+    
     # Get counts for display
     pending_count = question_review_collection.count_documents({})
     bank_count = question_bank_collection.count_documents({})
@@ -172,11 +194,14 @@ def admin_question_review():
                          total_count=total_count,
                          page_size=page_size,
                          pending_count=pending_count,
-                         bank_count=bank_count)
+                         bank_count=bank_count,
+                         ai_enabled=ai_enabled,
+                         pending_ai_review=pending_ai_review,
+                         is_processing=ai_processor.is_processing)
 
 # API endpoint for review questions data with pagination
 @questions_bp.route('/api/review/questions')
-@login_required(role='admin')
+@login_required
 @role_required(2)
 def api_review_questions():
     """API endpoint to get review questions as JSON with pagination"""
@@ -205,6 +230,8 @@ def api_review_questions():
         question['_id'] = str(question['_id'])
         if 'created_at' in question and isinstance(question['created_at'], datetime):
             question['created_at'] = question['created_at'].isoformat()
+        if 'ai_analyzed_at' in question and isinstance(question['ai_analyzed_at'], datetime):
+            question['ai_analyzed_at'] = question['ai_analyzed_at'].isoformat()
     
     return jsonify({
         "questions": questions,
@@ -215,7 +242,7 @@ def api_review_questions():
     })
 
 @questions_bp.route('/api/review/update', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('update')  # Requires update permission
 def update_review_question():
     """Update question in review"""
@@ -265,7 +292,7 @@ def update_review_question():
     return jsonify({"error": "Invalid action"}), 400
 
 @questions_bp.route('/bank')
-@login_required(role='admin')
+@login_required
 @permission_required('read')  # Requires read permission
 def admin_question_bank():
     """Question bank page"""
@@ -308,7 +335,7 @@ def admin_question_bank():
 
 # API endpoint for bank questions data with pagination
 @questions_bp.route('/api/bank/questions')
-@login_required(role='admin')
+@login_required
 @permission_required('read')
 def api_bank_questions():
     """API endpoint to get bank questions as JSON with pagination"""
@@ -352,7 +379,7 @@ def api_bank_questions():
     })
 
 @questions_bp.route('/api/bank/update', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('update')  # Requires update permission
 def update_question_bank():
     """Update question in bank"""
@@ -386,7 +413,7 @@ def update_question_bank():
     return jsonify({"error": "Invalid action"}), 400
 
 @questions_bp.route('/api/questions/approve/<question_id>', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('update')
 def approve_question(question_id):
     """Approve a specific question"""
@@ -417,7 +444,7 @@ def approve_question(question_id):
         return jsonify({"error": str(e)}), 500
 
 @questions_bp.route('/api/questions/reject/<question_id>', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('update')
 def reject_question(question_id):
     """Reject a specific question"""
@@ -430,7 +457,7 @@ def reject_question(question_id):
         return jsonify({"error": str(e)}), 500
 
 @questions_bp.route('/api/questions/delete/<question_id>', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('delete')
 def delete_question(question_id):
     """Delete a specific question from bank"""
@@ -444,7 +471,7 @@ def delete_question(question_id):
 
 # Bulk operations for review questions
 @questions_bp.route('/api/review/bulk-approve', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('update')
 def bulk_approve_questions():
     """Bulk approve questions"""
@@ -482,7 +509,7 @@ def bulk_approve_questions():
         return jsonify({"error": str(e)}), 500
 
 @questions_bp.route('/api/review/bulk-reject', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('update')
 def bulk_reject_questions():
     """Bulk reject questions"""
@@ -508,7 +535,7 @@ def bulk_reject_questions():
 
 # Bulk operations for bank questions
 @questions_bp.route('/api/bank/bulk-delete', methods=['POST'])
-@login_required(role='admin')
+@login_required
 @permission_required('delete')
 def bulk_delete_questions():
     """Bulk delete questions from bank"""
@@ -528,6 +555,109 @@ def bulk_delete_questions():
         return jsonify({
             "success": True, 
             "message": f"Successfully deleted {deleted_count} out of {len(question_ids)} questions"
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ==================== AI REVIEW ROUTES ====================
+
+@questions_bp.route('/api/review/analyze-all', methods=['POST'])
+@login_required
+@role_required(2)
+def analyze_all_questions():
+    """Start AI analysis for all pending questions"""
+    try:
+        # Start background processing
+        ai_processor.start_background_processing()
+        
+        return jsonify({
+            "success": True, 
+            "message": "AI analysis started for all pending questions. This may take several minutes."
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@questions_bp.route('/api/review/analyze/<question_id>', methods=['POST'])
+@login_required
+@role_required(2)
+def analyze_single_question(question_id):
+    """Analyze a single question with AI"""
+    try:
+        question = question_review_collection.find_one({"question_id": question_id})
+        if not question:
+            return jsonify({"error": "Question not found"}), 404
+        
+        # Get AI feedback
+        ai_feedback = ai_review_service.analyze_question(question)
+        
+        # Save to database
+        add_ai_feedback_to_question(question_id, ai_feedback)
+        
+        return jsonify({
+            "success": True,
+            "message": "Question analyzed successfully",
+            "ai_feedback": ai_feedback
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@questions_bp.route('/api/review/ai-status')
+@login_required
+@role_required(2)
+def get_ai_review_status():
+    """Get status of AI review system"""
+    pending_questions = list(question_review_collection.find({
+        "$or": [
+            {"ai_feedback": {"$exists": False}},
+            {"ai_feedback.status": {"$in": ["error", "ai_disabled"]}}
+        ]
+    }))
+    
+    analyzed_questions = list(question_review_collection.find({
+        "ai_feedback.status": "analyzed"
+    }))
+    
+    processing_questions = list(question_review_collection.find({
+        "ai_feedback.status": "processing"
+    }))
+    
+    return jsonify({
+        "ai_enabled": ai_review_service.enabled,
+        "pending_analysis": len(pending_questions),
+        "analyzed_count": len(analyzed_questions),
+        "processing_count": len(processing_questions),
+        "is_processing": ai_processor.is_processing,
+        "processed_count": ai_processor.processed_count,
+        "error_count": ai_processor.error_count
+    })
+
+@questions_bp.route('/api/review/apply-ai-suggestions/<question_id>', methods=['POST'])
+@login_required
+@role_required(2)
+def apply_ai_suggestions(question_id):
+    """Apply AI suggestions to a question"""
+    try:
+        question = question_review_collection.find_one({"question_id": question_id})
+        if not question:
+            return jsonify({"error": "Question not found"}), 404
+        
+        if not question.get('ai_feedback') or question['ai_feedback'].get('status') != 'analyzed':
+            return jsonify({"error": "No AI analysis available for this question"}), 400
+        
+        ai_feedback = question['ai_feedback']
+        updated_data = {
+            "text": ai_feedback.get('improved_question', question['text']),
+            "options": ai_feedback.get('improved_options', question['options']),
+            "correct_answer": ai_feedback.get('improved_options', question['options'])[0] if ai_feedback.get('improved_options') else question['correct_answer']
+        }
+        
+        # Update the question
+        update_question_with_ai_suggestions(question_id, updated_data)
+        
+        return jsonify({
+            "success": True,
+            "message": "AI suggestions applied successfully",
+            "updated_question": updated_data
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
